@@ -1,0 +1,23 @@
+128  !n of residues
+1711 !number of electrostatic contacts
+14400.0 !protein mass (g/mol)
+-5.6489615337039424E-002  -1.2805882477460026E-002   29.0 0.05 -3.3715274353375259E-004 1.7058695090775599E-003   4.3716186617863747E-003  as in Naganathan 2012 energy of a contact eps  (KJ/mol),entropy of one residue q (KJ/K/mol), eps_eff, Isolv(M), deltaCp(KJ mol-1 K-1), a(KJ/molK), b(KJ/molK2)
+330.,430.,2.,385 !280,380,0.05,385
+0,0,1 !(en nuestro caso, 0,0,1 ; el valor diferente de 1 sirve para salir del bucle) 
+rCalpha.txt
+1DPX.map
+1DPX_elec.map
+cmapASA_1dpxmod_uf_HP.dat
+ct
+.true. !triggers the calculation of the average energy
+.true.    !triggers the calculation of the specific heat
+.true. !triggers the calculation of the average native and loopy fraction: <m> and <m sigma>
+.false. !triggers the calculation of the folded fraction (Zf/Z, folding constant)
+.false. !triggers the calculation of the native strings
+.false. !triggers the calculation of the free energy profiles 
+.false. !triggers the calculation of the profile for folding probability of any residue <m_i>_M                    (normal WSME, in the profiles subroutine)     
+.true. !triggers the calculation of the profile for folding probability of any residue: <m_i> and <m_i sigma_i>    (LOOPY)
+.true. !triggers the calculation of the profile for folding probability of any island: <m_ij> and <m_ij sigma_ij> (LOOPY)
+
+!# -5.277619550888619895E-002  -1.1702637599459028363E-002   29.000000000000000     5.0000000000000003E-002   -2.20443379598194317E-004   1.5699999999999999E-003   5.5474801233316932E-003
+1# 10,10.2,0.05,385 !286,380,0.05,385

@@ -1,0 +1,140 @@
+module calc_interact
+  use defreal  
+  use phys_const
+  use globalpar
+  use protdep_par
+  implicit none
+  private  ! All entities are now module-private by default
+  public ::  calc_e_Phi 
+  
+  
+contains 
+  !Some adjustements to include i,i interactions, and to consider correctly the enthalpy (not used in gankyrin work) 13/11/2015
+
+  subroutine calc_e_Phi(&
+                                !     I:
+       &  T,c_den,y, &
+                                !hidden input: in modules
+                                !     O:
+       &  e,Phi,natbase)
+
+
+    real(kind=db),intent(in):: y(nparmax),T,c_den !c_den= denaturant concentration
+    real(kind=db),intent(out):: e(4,N,N),Phi(3),natbase(3) !native  baselines (the unfolded one are the Phi: 1->F,2->H,3->C) 
+    !     e(1,i,j)= h(i,j)/RT= eq (37b,c)
+    !     e(2,i,j)=v(i,j)/RT  
+    !     e(3,i,j)=D(i,j)/R   
+    !     e(4,i,j)=-1.5*log (real(j - i+1))       coste entropico de tener un loop entre i y j. OJO! hasta ahora todo escrito en términos de interacció entre i y j ahora este termino da cuenta de la modificación a la energía libre de una región no de un enlace
+    !The e(1,i,j), as in previous versions, account for the (free-)energy change upon forming the contact i,j. 
+    !So, the sum of the e(1,i,j) for the completely unfolded conformation is 0. 
+    integer :: i,j,l
+    real(kind=db)::  ee(3,N,N)
+    !     ee(1,i,j) = (Kco*q(i)q(j)/r(i,j))*exp(-kappa*r(i,j))=> Contribución eléctrica a e(1,i,j)
+    !     ee(2,i,j) = Kco*q(i)q(j)*(1/r(i,j)-kappa/2)*exp(-kappa*r(i,j))=> Contribución eléctrica a e(2,i,j)
+    !     ee(3,i,j) = (Kco*q(i)q(j)*kappa*(3-kappa*r(i,j))/4T)*exp(-kappa*r(i,j))=> Contribución eléctrica a e(3,i,j)
+    real(kind=db):: csi_nag,DeltaC,cmapd(N,N),ASAmap(N,N),DeltaS,epseff,Ionicforce,aonR,bonR,varCp,kappa,Kco 
+
+    !Inicialización de arrays a 0
+    e=0._db
+    ee = 0._db 
+    Phi=0._db
+    natbase=0._db
+
+    !Mapas de contactos a utilizar
+    cmapd=delta(1,:,:) !cmapd is the contact map calculated with cutoff distance
+    ASAmap=delta(2,:,:) !ASAtotal map
+
+    !Parámetros del modelo
+    csi_nag=y(1) !eps in J/mol
+    DeltaS=y(2) !s in J/molK
+    epseff=y(3) !eps_eff 
+    Ionicforce=y(4) !I_solv in M
+    DeltaC=y(5) !DeltaC in J/molK
+    aonR=y(6)*Mw/R  !a in J/(g K), Mw in g/mol
+    bonR=y(7)*Mw/(1000*R) !b in J/(g K^2)
+    ! according to Naganathan 2012, the specific heat's unfolded  baseline is Mw(a+(b/1000)(T-T0C)) 
+    ! here we divide by R, to "dimensionally" agree with the rest of the output for specific heat
+
+    !Parámetros no dependientes de los átomos, se precalculan fuera del bucle en átomos
+    Kco=Kcoul/epseff
+    varcp=((T-T_ref)-T*log(T/T_ref))
+    kappa = prefac_kappa*sqrt(Ionicforce/(T*epseff)) 
+    !Contribuciones eléctricas. Bucle en átomos
+    do l=1,N1
+       i=int(v(l,1))
+       j=int(v(l,2))
+       ee(1,i,j)= ee(1,i,j) + Kco*v(l,3)*v(l,4)*exp(-v(l,5)*kappa)/v(l,5)
+       ee(2,i,j)= ee(2,i,j) + Kco*v(l,3)*v(l,4)*exp(-v(l,5)*kappa)*(1/v(l,5)-kappa/2)
+       ee(3,i,j)= ee(3,i,j) + Kco*v(l,3)*v(l,4)*exp(-v(l,5)*kappa)*kappa*(3-kappa*v(l,5))/(4*T)
+    enddo
+
+    !Hamiltoniano completo+contribuciones C dependiente de T. Bucle en residuos
+    do i=1,N
+       do j=i,N
+          if(i.le.j-1) then
+             e(1,i,j)= e(1,i,j)+ ee(1,i,j)
+             e(2,i,j)= e(2,i,j) + ee(2,i,j)
+             e(3,i,j)= e(3,i,j) + ee(3,i,j)
+          endif
+          if(i.le.j-2) then
+             e(1,i,j)=e(1,i,j)+ csi_nag*cmapd(i,j) + varcp*DeltaC*ASAmap(i,j)
+             e(2,i,j)= e(2,i,j) + csi_nag*cmapd(i,j)+ DeltaC*(T-T_ref)*ASAmap(i,j)
+             e(3,i,j)=e(3,i,j) + DeltaC*ASAmap(i,j)
+          endif
+!!$          if(j.eq.i) then
+!!$             e(1,i,i)=e(1,i,i)-T*DeltaS
+!!$          endif
+          e(1,i,j)= e(1,i,j)/(R*T) !PIER: CHANGED SIGN 27/8/24
+          e(2,i,j)= e(2,i,j)/(R*T)
+          e(3,i,j)= e(3,i,j)/(R)
+          natbase(1)=natbase(1)+e(1,i,j) !PIER: CHANGED SIGN 27/8/24
+          natbase(2)=natbase(2)+e(2,i,j)
+          natbase(3)=natbase(3)+e(3,i,j)
+          !write(*,*) i,j, e(1,i,j), e(2,i,j), e(3,i,j)
+          !     rCalpha=17.89113594 !la distancia entre carbonos alpha
+          if (j.eq.i) then !PIER: CHANGED THE STRUCTURE OF THE e, putting all the entropy in e(4,,)  27/8/24
+             e(4,i,i)=DeltaS/R !PIER: notice that this represents the entropy cost of native residue i (so, this is negative)
+             natbase(1)=natbase(1)-deltaS/R !PIER: CHANGED  27/8/24
+          endif
+          if (j-i>1) then !PIER: HE VUELTO A PONER ESTE IF, QUE ME PARECE MÁS SEGURO  27/8/24
+             e(4,i,j)=1.5*log (real(j - i))+1.5*(rCalpha(i,j)**2-3.8**2)/((j-i)*2*20*3.8)
+          endif
+       end do
+    enddo
+
+
+    !do i=1,N
+    ! do j=i,N
+    ! write(60,*) i,j, e(2,i,j)
+    ! enddo
+    !enddo
+
+    !Cálculo de las Phis
+    Phi(1)=aonR*((T-T0C)/T-log(T/T0C))+ bonR*((T0C**2-T**2)/(2*T)+T0C*log(T/T0C))
+    natbase(1)=natbase(1)+ Phi(1)
+
+    Phi(2)=aonR*(T-T0C)/T+bonR*((T-T0C)**2)/(2.*T) 
+    natbase(2)=natbase(2)+ Phi(2)
+
+    Phi(3)=aonR+bonR*(T-T0C)
+    natbase(3)=natbase(3)+ Phi(3)
+
+    return
+  end subroutine calc_e_Phi
+! !*********************************************
+! function pol(v,x,deg)
+! use defreal 
+! implicit none
+! real(kind=db):: pol
+! integer :: deg,i      
+! real(kind=db):: v(0:deg),x
+! pol=v(deg)
+! do i=deg-1,0,-1
+!   pol=pol*x+v(i)
+! enddo
+! return
+! end function pol
+
+! !**********************************************
+end module calc_interact
+
