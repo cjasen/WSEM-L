@@ -58,9 +58,10 @@ contains
     !Parámetros no dependientes de los átomos, se precalculan fuera del bucle en átomos
     Kco=Kcoul/epseff
     varcp=((T-T_ref)-T*log(T/T_ref))
-    kappa = prefac_kappa*sqrt(Ionicforce/(T*epseff)) 
+    kappa = prefac_kappa*sqrt(Ionicforce/(T*epseff)) !prefac_kappa is calculated on read_init
     !Contribuciones eléctricas. Bucle en átomos
     do l=1,N1
+      !v(i,j) are the electric contributions coded in elecmapfile (PDB_elec.map). v(i,1) and v(i,2) are the residues of interaction number "i", v(i,3) and v(i,4) have charges and v(i,5) has distances
        i=int(v(l,1))
        j=int(v(l,2))
        ee(1,i,j)= ee(1,i,j) + Kco*v(l,3)*v(l,4)*exp(-v(l,5)*kappa)/v(l,5)
@@ -81,17 +82,12 @@ contains
              e(2,i,j)= e(2,i,j) + csi_nag*cmapd(i,j)+ DeltaC*(T-T_ref)*ASAmap(i,j)
              e(3,i,j)=e(3,i,j) + DeltaC*ASAmap(i,j)
           endif
-!!$          if(j.eq.i) then
-!!$             e(1,i,i)=e(1,i,i)-T*DeltaS
-!!$          endif
           e(1,i,j)= e(1,i,j)/(R*T) !PIER: CHANGED SIGN 27/8/24
           e(2,i,j)= e(2,i,j)/(R*T)
           e(3,i,j)= e(3,i,j)/(R)
           natbase(1)=natbase(1)+e(1,i,j) !PIER: CHANGED SIGN 27/8/24
           natbase(2)=natbase(2)+e(2,i,j)
           natbase(3)=natbase(3)+e(3,i,j)
-          !write(*,*) i,j, e(1,i,j), e(2,i,j), e(3,i,j)
-          !     rCalpha=17.89113594 !la distancia entre carbonos alpha
           if (j.eq.i) then !PIER: CHANGED THE STRUCTURE OF THE e, putting all the entropy in e(4,,)  27/8/24
              e(4,i,i)=DeltaS/R !PIER: notice that this represents the entropy cost of native residue i (so, this is negative)
              natbase(1)=natbase(1)-deltaS/R !PIER: CHANGED  27/8/24
@@ -103,20 +99,14 @@ contains
     enddo
 
 
-    !do i=1,N
-    ! do j=i,N
-    ! write(60,*) i,j, e(2,i,j)
-    ! enddo
-    !enddo
-
     !Cálculo de las Phis
-    Phi(1)=aonR*((T-T0C)/T-log(T/T0C))+ bonR*((T0C**2-T**2)/(2*T)+T0C*log(T/T0C))
+    Phi(1)=aonR*((T-T0C)/T-log(T/T0C))+ bonR*((T0C**2-T**2)/(2*T)+T0C*log(T/T0C)) !Free energy
     natbase(1)=natbase(1)+ Phi(1)
 
-    Phi(2)=aonR*(T-T0C)/T+bonR*((T-T0C)**2)/(2.*T) 
+    Phi(2)=aonR*(T-T0C)/T+bonR*((T-T0C)**2)/(2.*T) !Enthalpy
     natbase(2)=natbase(2)+ Phi(2)
 
-    Phi(3)=aonR+bonR*(T-T0C)
+    Phi(3)=aonR+bonR*(T-T0C) !Specific heat
     natbase(3)=natbase(3)+ Phi(3)
 
     return

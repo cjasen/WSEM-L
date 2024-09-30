@@ -9,10 +9,10 @@ module thermoab
 
     contains
 
-      subroutine calc_thermoab(&
+      subroutine calc_thermoab(& !calculates the contributions of each (a->b) island of m=1,s=0 in a sea of m=1,s=1
            
                                 ! I:
-           & a_start,leng,econtrib,&
+           & a_start,leng,econtrib,& ! econtrib is auxe which is also e, the matrix with the ~h_ij calculated in calc_e_Phi
                                 ! O:
            & logZeta,EonRT,EonRTsquared,ConR_fixedconf,ConR,sigma,sigmai,fracfold)
         !     use defreal
@@ -22,7 +22,7 @@ module thermoab
 
 
         implicit none
-        integer,intent(in) :: a_start,leng ! for region (a,b), a_start=a, leng=b-a+1
+        integer,intent(in) :: a_start,leng ! for region (a->b), a_start=a, leng=b-a+1
 
         real(kind=db),intent(in):: econtrib(:,:,:) !econtrib(4,leng,leng)
         real(kind=db),intent(out):: logZeta,EonRT,ConR,sigma,sigmai(1:N),fracfold
@@ -37,7 +37,7 @@ module thermoab
         ConR=0._db
         sigma=0._db
         nu=0._db
-        call datiab(logZeta,EonRT,EonRTsquared,ConR_fixedconf,ConR,sigma,sigmai,econtrib,a_start,leng)
+        call datiab(logZeta,EonRT,EonRTsquared,ConR_fixedconf,ConR,sigma,sigmai,econtrib,a_start,leng) !dati is the plural for data, as this calculates thermo data. Terrible name.
         ! write(*,*) 'main:: structF/RT=' ,-logZeta
 
 
@@ -49,10 +49,12 @@ module thermoab
       end subroutine calc_thermoab
 
 
-    !***********************************************+
+   !***********************************************
+   !***********************************************
+   !***********************************************
+   !***********************************************
 
-
-    subroutine datiab(&     
+   subroutine datiab(&     
                                 !     O:
          & logZeta,EonRT,EonRTsquared,ConR_fixedconf,ConR,sigma,sigmai, &
                                 !     I:
@@ -72,37 +74,7 @@ module thermoab
       real(kind=db):: aux,aux1,auxmin,auxmax,aux1min,aux1max,auxHmin,auxHmax !FOR CHECKS
       integer:: auximin,auximax,auxjmin,auxjmax !FOR CHECKS
 
-      !      write (*,*) 'entered dati'
-      offset=a_start-1
-
-!!$      H=1.0_db
-!!$      do j=1,leng
-!!$         do i=1,j
-!!$            !PIER: Here we are assuming that V^{l,l} =0 the interactions within a loop have no energy, like those in the unfolded regions, so that the contdition 8, 14 in the notes become DeltaV^(n,l)=DeltaV^(l,l)/2=-V^nn/2
-!!$            do k=1,j
-!!$               H(i,j)=H(i,j)*exp(econtrib(1,k+offset,j+offset)/2) !PIER: changed sign 27/08/24
-!!$            enddo
-!!$            do k=j+1,leng
-!!$               H(i,j)=H(i,j)*exp(econtrib(1,j+offset,k+offset)/2) !PIER: changed sign 27/08/24
-!!$            enddo
-!!$            H(i,j)=H(i,j)*exp(econtrib(1,j+offset,j+offset)/2 - econtrib(4,j+offset,j+offset)) !PIER: changed sign and econtrib(4) 27/08/24
-!!$            
-!!$            aux=log(H(i,j))
-!!$
-!!$            if (j-i>1) then
-!!$               H(i, j) = H(i, j)*exp(-econtrib(4,i+offset,j+offset)+econtrib(4,i+offset,j+offset-1))
-!!$               aux1=-econtrib(4,i+offset,j+offset)+econtrib(4,i+offset,j+offset-1)
-!!$               
-!!$            endif
-!!$!            H(i,j)=exp(-50*abs(econtrib(1,k+offset,j+offset))) !CHECK: REMOVE
-!!$
-!!$        !write(60,*) a_start, a_start+leng-1,i,j,aux&
-!!$        !& +econtrib(1,j+offset,j+offset),-econtrib(1,j+offset,j+offset),aux1,log(H(i,j))!, -econtrib(1,j+offset,j+offset)
-!!$            aux=0
-!!$            aux1=0
-!!$            !H(i,j)=0
-!!$         enddo
-!!$      enddo
+      offset=a_start-1 !to know in which part of the whole residue chain our island starts
 
       H=0.0_db
       auxHmax=-100000000000000.
@@ -128,10 +100,7 @@ module thermoab
             endif
             H(i,j)=H(i,j)+ econtrib(4,j+offset,j+offset) !PIER: changed sign and econtrib(4) 27/08/24
             aux1=aux1+ econtrib(4,j+offset,j+offset)
-!            H(i,j)=exp(-50*abs(econtrib(1,k+offset,j+offset))) !CHECK: REMOVE
 
-!            write(60,*) a_start, a_start+leng-1,i,j,aux&
-!                 & +econtrib(1,j+offset,j+offset),-econtrib(1,j+offset,j+offset),aux1,log(H(i,j))!, -econtrib(1,j+offset,j+offset)
             if(H(i,j)<auxHmin) then
                auxmin=aux
                aux1min=aux1
@@ -153,12 +122,8 @@ module thermoab
             H(i,j)=exp(-H(i,j))
          enddo
       enddo
-!!$      write(60,*) a_start, a_start+leng-1,auximin,auxjmin,auxmin,aux1min,auxHmin !, -econtrib(1,j+offset,j+offset)
-!!$      write(60,*) a_start, a_start+leng-1,auximax,auxjmax,auxmax,aux1max,auxHmax !, -econtrib(1,j+offset,j+offset)      
-      !if(a_start ==1 ) then
-      !  write(*,*) 'H es ',H(3,3),H(1,12)
-      ! end if
 
+      ! O means "output" and has the energy (enthalpy?) contribution
       if(wEave.or.wC) then
          !     energia e(2,i,j)=vij/RT
          O=0.0_db
@@ -177,13 +142,12 @@ module thermoab
          enddo
       endif
 
+      ! O2 is another output, with the specific heat (yes, another terrible name bc specific heat is e(3) and its output is O2)
       if(wC) then
          !     cal spec della configurazione e(3,i,j)=dij/R
          O2=0.0_db
          do j=1,leng
             do i=1,j
-               !PIER: aquí estaba un error importante, en el cálculo de las energías 27/8/24
-                  !   energy contribution from loop stretch a+i-1 to a+j-1
                do k=1,j-1
                   O2(i,j)=O2(i,j)-econtrib(3,k+offset,j+offset)/2
                enddo
@@ -191,14 +155,6 @@ module thermoab
                   O2(i,j)=O2(i,j)-econtrib(3,j+offset,k+offset)/2
                enddo
                O2(i,j)=O2(i,j)-econtrib(3,j+offset,j+offset)
-               
-!!$               do k=i,j
-!!$                  !           if (k.lt.j) then
-!!$                  O2(i,j)=O2(i,j)-econtrib(3,k+offset,j+offset)
-!!$                  !           endif
-!!$
-!!$               enddo
-               !           write(*,*) "dati:: Hij,Oij,O2ij",i,j, H(i,j),O(i,j),O2(i,j)
 
             enddo
          enddo

@@ -47,7 +47,7 @@ program WSME_genTden_loopy
   allocate(EonRTabsquared(1:N,1:N),ConRab_fixedconf(1:N,1:N)) !PIER: added this 27/8/24
   allocate(EonRTabtot(1:N,1:N),EonRTabsquaredtot(1:N,1:N),ConRab_fixedconftot(1:N,1:N),Unsquared(1:N,1:N)) !PIER: added this 27/8/24
 
-  call read_init(&
+  call read_init(&              ! No imput because we pass the file with the console in format ____.exe < input.in
                                 !     O:
        &     parv)
 
@@ -79,7 +79,7 @@ program WSME_genTden_loopy
   allocate(auxe(4,aaux:baux,aaux:baux))
 
 
-  cden=cdenmin
+  cden=cdenmin ! concentration of denaturant. We only use 0
   do while (cden.le.cdenmax)
 
      T=Tmin
@@ -88,13 +88,8 @@ program WSME_genTden_loopy
         logZeta=0._db
         EonRT=0._db
         ConR=0._db
-        !        Mavg=0._db
-        !       !      Mavg(T=0K)=1:
-        !        M0=1._db
-        !        !     calculate Minf=Mavg()
-        !        Minf=0._db
 
-        call calc_e_Phi(&
+        call calc_e_Phi(& ! calculates interaction between residues without taking into account their folding state (conceptually: h_ij)
                                 !     I:
              &          T,cden,parv,&
                                 !     O:
@@ -117,8 +112,9 @@ program WSME_genTden_loopy
 
         do aaux=1,N
            do baux=aaux,N
-              call calc_thermoab(aaux,baux-aaux+1,auxe,&
-                   &  logZetaaux,EonRTaux,EonRTsquaredaux,ConR_fixedconfaux,ConRaux,sigmaaux,sigmaiaux,fracfold)
+              call calc_thermoab(aaux,baux-aaux+1,auxe,& !calculates the contributions of each (a->b) island of m=1,s=0 in a sea of m=1,s=1
+                   &  logZetaaux,EonRTaux,EonRTsquaredaux,ConR_fixedconfaux,ConRaux,sigmaaux,sigmaiaux,fracfold& !sigmaaux is <s>_(a,b). sigmai(aux) is <s_i>_ab = sum_(a,b) f^i_(a,b)*Z^(a,b) where f=1 if a in (a,b) and 0 if not
+                   &)
 !!$ !PIER: To build the pure WSME limit, without loops, comment lines below: from here...
               logZetaab(aaux,baux)=logZetaaux
 !              write (*,*) "check: a,b,logZetaab= ",aaux,baux,logZetaaux
@@ -134,113 +130,55 @@ program WSME_genTden_loopy
            enddo
         enddo
 
-        !do i=1,N
-        !write(*,*) ConRab(1,i)
-        !enddo
 
+      !we have to add the off-set of the all-native case:
+      !Hn is betaH^nn
 
-
-        !we have to add the off-set of the all-native case:
-        !Hn is betaH^nn
-
-        Hn=0.0_db
+      Hn=0.0_db
+      Un=0.0_db
+      Unsquared=0.0_db !PIER: added this  27/8/24
+      Cvn=0.0_db
    	do j=1,N
       	   do i=1,j
-
               do k=i,j
                  do l=k,j
-                    Hn(i,j)=Hn(i,j)+auxe(1,k,l)
+                  !auxe is just e(), the matrix calculated with calc_e_Phi_genTden_loopy
+                    Hn(i,j)=Hn(i,j)+auxe(1,k,l) ! Hn(i,j)=(effective energy of the i,j native island)/RT (being 0 the completely unfolded energy as reference)
+                    Un(i,j)=Un(i,j)+auxe(2,k,l)
+                    Cvn(i,j)=Cvn(i,j)+auxe(3,k,l)
                     if (k.eq.l) then
                        Hn(i,j)=Hn(i,j)- auxe(4,k,k) !PIER: added this 27/08/2024
                     endif
                  enddo
               enddo
-              ! Hn(i,j)=(effective energy of the i,j native island)/RT (being 0 the completely unfolded energy as reference)
-!              write (*,*) "check: a,b, betaHnn(a,b)= ",i,j,Hn(i,j)
+              Unsquared(i,j)=Un(i,j)**2
+
            enddo
-  	enddo
+  	enddo 
 
-        logZetaab=logZetaab- Hn !PIER: changed this sign 27/08/2024
-
-!!!!!!!!!        ARREGLAR AQUI ABAJO la contribución a E^2(a,b) que sera EonRTsquared(a,b)+2*Hn(a,b)EonRT(a,b)+Unsquared (este hay que calcularlo). El calor specifico nativo CVn debería estar bien, pero ConRab=ConRab+Cvn debería ser ConRab_fixedconf(a,b)=ConRab_fixedconf(a,b)+Cvn
-        !PIER: added this part for Esquared and C_fixedconf.
-
-
-        Un=0.0_db
-        Unsquared=0.0_db !PIER: added this  27/8/24
-        do j=1,N
-      	   do i=1,j
-              do k=i,j
-                 do l=k,j
-                    Un(i,j)=Un(i,j)+auxe(2,k,l)
-                 enddo
-              enddo
-              Unsquared(i,j)=Un(i,j)**2   !PIER: added this  27/8/24
-           enddo
-  	enddo
+        !PIER: added this part for Esquared and C_fixedconf
         do j=1,N !PIER: added this do loop  27/8/24
            do i=1,j
               EonRTabsquaredtot(i,j)=EonRTabsquared(i,j)+2*EonRTab(i,j)*Un(i,j)+Unsquared(i,j)
            enddo
         enddo
+        logZetaab=logZetaab- Hn !PIER: changed this sign 27/08/2024
         EonRTabtot=EonRTab+Un
-
-
-
-        Cvn=0.0_db
-        do j=1,N
-      	   do i=1,j
-              do k=i,j
-                 do l=k,j
-                    Cvn(i,j)=Cvn(i,j)+auxe(3,k,l)
-                 enddo
-              enddo
-           enddo
-  	enddo
-  	ConRab_fixedconftot=ConRab_fixedconf+Cvn !PIER: added this  27/8/24
-
-
-
-
+        ConRab_fixedconftot=ConRab_fixedconf+Cvn !PIER: added this  27/8/24
 
    !finally we calculate partition function and observables:
    !PIER: CHANGE calc_thermo:
 
-        call calc_thermo2(N, logZetaab, EonRTabtot,EonRTabsquaredtot, ConRab_fixedconftot, sigmaab,sigmaiab,&
+        !notice calc_thermoab was in bucle of (a->b) while here the argument is just the number of residues N
+        call calc_thermo2(N, logZetaab, EonRTabtot,EonRTabsquaredtot, ConRab_fixedconftot, sigmaab,sigmaiab,& !calculates contribution of folded islands (m=1) on a sea of unfolded (m=0)
              &logZeta, EonRT, ConR,ConRfixave, Mavg, sigmaavg,fracfold,Mi,sigmai,Mij,sigmaij)
-
-
-
-
-
-
-
 
         !RESULTS:
 
         FreeonRT=-logZeta+Phi(1)
         EnthonRT=EonRT+Phi(2)
         ConR=ConR+Phi(3)
-!!$ INTENTOS: QUITAR ESTO:
-!!$        aux=0.
-!!$        ConRtest=0.
-!!$        do j=1,N
-!!$           do i=1,j
-!!$              aux=Mij(i,j)
-!!$              if (i>1) aux=aux-Mij(i-1,j)
-!!$              if (j<N) aux=aux-Mij(i,j+1)
-!!$              if ((i>1).and.(j<N)) aux=aux+Mij(i-1,j+1)  
-!!$              ConRtest=ConRtest+Unsquared(i,j)*aux*(1-aux)+aux*(EonRTabsquared(i,j)-aux* EonRTab(i,j)**2)
-!!$           enddo
-!!$        enddo
-!!$        ConRtest=ConRtest+ConRfixave
-!!$        write(*,*) T,ConRtest
-!!$  ...HASTA AQUI
-        
-        !write(*,*) 'ConR=',ConR
-        !write(*,*)Phi(3)
-        !write(*,*) cden,T,Mavg,-R*T*logZeta,R*T*EonRT,R*(EonRT+logZeta),&
-        !&        R*T*FreeonRT,R*T*EnthonRT,R*(EnthonRT-FreeonRT),R*ConR
+
 
         write(20,*) cden,T,(Mavg-Minf)/(M0-Minf),sigmaavg,&
              &       R*T*FreeonRT,R*T*EnthonRT,R*(EnthonRT-FreeonRT),R*ConR,R*Phi(3),R*natbase(3)
@@ -250,7 +188,7 @@ program WSME_genTden_loopy
         if (wFprof.or.wmprof) then
            F=0.
            nu=0.
-           call profiles(e,wmprof,F,nu)     
+           call profiles(e,wmprof,F,nu)   ! I think profiles doesn't work
            if(wFprof) then
               do iM=0,N
                  write(30,*) cden,T,iM,R*T*F(iM),R*T*(F(iM)+Phi(1))
@@ -278,46 +216,23 @@ program WSME_genTden_loopy
            enddo
         endif
 
-        !write(*,*) T, logZeta
-
-        !do j=1,N
-        !write(*,*) Mi(j), Mij(j,j)
-        !enddo
-        !write(*,*) sig/N
-
-
-        ! write(*,*) 'Matriz:'
-    	!do i = 1, 10
-        !	do j = 1, 10
-        ! 	  write(*,'(F6.2)', advance="no") Mij(i, j)
-        ! 	  if (j < 10) then
-        !  		write(*, '(A)', advance="no") ' '  ! Espacio entre elementos de la fila
-        !      endif
-        !	end do
-        !      write(*,*)  ! Para nueva línea después de cada fila
-        ! end do
-
-
 
         do i=1,N
-           write(50,*) T, i, Mi(i),sigmai(i),(Mi(i)-sigmai(i))
+           write(50,*) T, i, Mi(i),sigmai(i),(Mi(i)-sigmai(i)) ! magnetization for each residue
         enddo
-
-
-
 
         aux=0
         do i=1,N
            aux=aux+sigmai(i)
         enddo
 
-        write(*,*) 'T, Cp, folded promedio, sigma promerdio: ', T, R*ConR, Mavg, aux/N   
+        write(*,*) 'T, Cp, <m>, <s>:', T, R*ConR, Mavg, aux/N ! the magnetizations are the average of the whole system, not just of one residue or island
 
         T=T+deltaT
-
      enddo
      cden=cden+deltacden
   enddo
+
   if(wFprof) close (30)
   if(wmprof) close (35)
   if(wstr)   close (40)
@@ -326,50 +241,19 @@ program WSME_genTden_loopy
   close(60)
 
 
-  write(*,*) 'theend'
+  write(*,*) '***** THE END *****'
 
 end program WSME_genTden_loopy
-!***************************
-! subroutine calc_thermo(&
-!
-!    ! I:
-!      & e,&
-!      ! O:
-!      & logZeta,EonRT,ConR,Mavg,fracfold)
-!      use defreal
-! !     use phys_const
-!      use globalpar , only : wfoldfr
-!      use protdep_par, only : N
-!      ! NB: WORKING WITH RESIDUES INSTEAD OF PEPTIDE BONDS
-!
-!
-!      implicit none
-!      real(kind=db),intent(in):: e(3,N,N)
-!      real(kind=db),intent(out):: logZeta,EonRT,ConR,Mavg,fracfold
-!      real(kind=db):: nu(1:N,1:N),F(0:N)
-!
-!      logical,parameter :: withmprof=.false.
-!
-!
-!      logZeta=0.
-!      EonRT=0.
-!      ConR=0.
-!      Mavg=0.
-!      nu=0.
-!      call dati(logZeta,EonRT,ConR,Mavg,e)
-!      ! write(*,*) 'main:: structF/RT=' ,-logZeta
-!
-!      if(wfoldfr) then
-!        call profiles(e,withmprof,F,nu)
-!        call calc_fracfold(F,fracfold)
-!      endif
-!      return
-!     end subroutine calc_thermo
-!
-!
-! !***********************************************+
 
-subroutine read_init(&
+
+!************************************************
+!************************************************
+!************************************************
+!************************************************
+
+
+
+subroutine read_init(& !we call this routine at the very start of the main
                                 !    O:
      &     parv)
   !More output hidden in module globalpar, protdeppar
@@ -390,9 +274,11 @@ subroutine read_init(&
   integer::  i,j,l,io_status
   real(kind=db):: difftot,nASA,nct,valor
   double precision s1,s2,s3,s4,s5,s6,s7,s8,s9,s10,s11,s12
+
+  ! calculated with the logarithm to better manage big numbers. 27*log(10) is the conversion from liters to A^3
   prefac_kappa = 0.5*(log(2.)+log(Navo)+2*log(qe)-27*log(10.)-log(vac_eps0)-log(kB))
   prefac_kappa = exp(prefac_kappa)
-  ! calculated with the logarithm to better manage big numbers. 27*log(10) is the conversion from liters to A^3
+  
 
   !  input file format:
   !  N  !n of residues
@@ -413,11 +299,11 @@ subroutine read_init(&
   read(*,*) (parv(i),i=1,nparmax)
   read(*,*) Tmin,Tmax,deltaT,T_ref
   read(*,*) cdenmin,cdenmax,deltacden
-  read(*,*) mapaCalpha
-  read(*,*) cmapfile
-  read(*,*) elecmapfile
-  read(*,*) solvmapfile
-  read(*,*) MapasContacto
+  read(*,*) mapaCalpha     !rCalpha
+  read(*,*) cmapfile       !PBI.map
+  read(*,*) elecmapfile    !PBI_elec.map
+  read(*,*) solvmapfile    !cmapASA_PBI_uf_HP.dat
+  read(*,*) MapasContacto  !ct (this is a flag to use contact map instead of ASA)
   read(*,*) wEave
   read(*,*) wC
   read(*,*) wMave
@@ -485,15 +371,6 @@ subroutine read_init(&
   enddo
   close(31)
 
-  !do i = 1, N
-  !     do j = i, N
-  !       
-  !             write(*,*) 'rCalpha(', i, ',', j, ') = ', rCalpha(i, j)
-
-  !     end do
-  ! end do
-
-
   nASA=0 !nº contactos ASA
   !Mapa solvatación
   open(12,file=solvmapfile)
@@ -507,11 +384,6 @@ subroutine read_init(&
   go to 3
 4 close(12)
 
-  write(*,*) 'nct = ',nct
-  write(*,*) 'nASA = ',nASA
-  write(*,*) 'dCct=', parv(5)
-  write(*,*) 'dC=', (parv(5)*nct)/nASA
-
   select case (MapasContacto) !casos para los mapas de contacto. ct=ambos cutoff, ASA=ambos ASA, mix=VDW ct, solvatacion ASA
   case ('ct') 
      delta(2,:,:)  = delta(1,:,:) 
@@ -520,96 +392,16 @@ subroutine read_init(&
   case ('mix') 
   end select
 
-
-
-
-
-
-
-
-  !   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !   !     LOOK HERE! using the WSME limit of the WSMEF hamiltonian:
-  !   do i=1,N
-  !      qfrei(1,i)=0.
-  !      do k=2,3
-  !         qfrei(k,i)=1.
-  !      enddo
-  !   enddo
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-!!$ LOOK HERE! THIS PART BELOW commented for the WSME limit:
-!!$   
-!!$      do k=1,2
-!!$         densASA(k)=(ASA(2,k)-ASA(1,k))/nctot(k+1)
-!!$c        deltaASA(=native-folded) density on the number of contacts: 1:APOLAR,2:POLAR
-!!$      enddo
-!!$
-!!$      enpar=0.d0
-!!$
-!!$      enpar(1,0)=vfr*MW+pfr*ASAtot+(a1fr-pfr)*ASA(1,1)
-!!$     >     +(b1fr-pfr)*ASA(1,2)
-!!$      enpar(1,1)=wfr*MW+qfr*ASAtot+(a2fr-qfr)*ASA(1,1)
-!!$     >     +(b2fr-qfr)*ASA(1,2)
-!!$      enpar(1,2)=a3fr*ASA(1,1)+b3fr*ASA(1,2)
-!!$
-!!$      enpar(2,0)=T0*(-enpar(1,0) +enpar(1,1)*T0/2. -enpar(1,2)*T0**2/3.)
-!!$      enpar(2,1)=enpar(1,0) -enpar(1,1)*T0 +enpar(1,2)*T0**2 
-!!$      enpar(2,2)= enpar(1,1)/2. -enpar(1,2)*T0 
-!!$      enpar(2,3)=enpar(1,2)/3.
-!!$
-!!$      enpar(3,0)=enpar(2,0) 
-!!$      enpar(3,1)=enpar(1,0) -enpar(1,2)*T0**2/2. 
-!!$      enpar(3,2)=-enpar(2,2) 
-!!$      enpar(3,3)=-enpar(2,3)/2.
-!!$      enpar(3,4)=-enpar(2,1)
-!!$
-!!$
-!!$      enpar(4,0)=(a1fr-pfr)*densASA(1)
-!!$      enpar(4,1)=(a2fr-qfr)*densASA(1)
-!!$      enpar(4,2)=a3fr*densASA(1)
-!!$      enpar(5,0)=(b1fr-pfr)*densASA(2)
-!!$      enpar(5,1)=(b2fr-qfr)*densASA(2)
-!!$      enpar(5,2)=b3fr*densASA(2)
-!!$
-!!$      enpar(6,0)=T0*(-enpar(4,0) +enpar(4,1)*T0/2.-enpar(4,2)*T0**2/3.)
-!!$     >     +0.0964754*densASA(1)/R
-!!$c     last term from the experimental estimation of DeltaH(60C) by Freire
-!!$      enpar(6,1)=enpar(4,0) -enpar(4,1)*T0 +enpar(4,2)*T0**2 
-!!$      enpar(6,2)= enpar(4,1)/2. -enpar(4,2)*T0 
-!!$      enpar(6,3)=enpar(4,2)/3.
-!!$      enpar(7,0)=T0*(-enpar(5,0) +enpar(5,1)*T0/2. -enpar(5,2)*T0**2/3.)
-!!$     >     -0.169887*densASA(2)/R
-!!$c     last term from the experimental estimation of DeltaH(60C) by Freire
-!!$      enpar(7,1)=enpar(5,0) -enpar(5,1)*T0 +enpar(5,2)*T0**2 
-!!$      enpar(7,2)= enpar(5,1)/2. -enpar(5,2)*T0 
-!!$      enpar(7,3)=enpar(5,2)/3.
-!!$
-!!$      enpar(8,0)=enpar(6,0) 
-!!$      enpar(8,1)=enpar(4,0) -enpar(4,2)*T0**2/2. 
-!!$     >     +0.000349019*densASA(1)/R 
-!!$c     last term from the experim. estimation of DeltaS(T)=DCpol*ln(T/335.15)+DCapo*ln(T/385.15)
-!!$      enpar(8,2)=-enpar(6,2) 
-!!$      enpar(8,3)=-enpar(6,3)/2.
-!!$      enpar(8,4)=-enpar(6,1)
-!!$      enpar(9,0)=enpar(7,0) 
-!!$      enpar(9,1)=enpar(5,0) -enpar(5,2)*T0**2/2. 
-!!$     >     -0.00012779*densASA(2)/R
-!!$c     last term from the experim. estimation of DeltaS(T)=DCpol*ln(T/335.15)+DCapo*ln(T/385.15)
-!!$      enpar(9,2)=-enpar(7,2) 
-!!$      enpar(9,3)=-enpar(7,3)/2.
-!!$      enpar(9,4)=-enpar(7,1)
-!!$...TILL HERE: WSME LIMIT
-
-!!$      do i=1,9
-!!$         write(*,*) "readinit:: i, enpar(i,:)=", i, (enpar(i,j),j=0,4)
-!!$      enddo
-
-
   return
 end subroutine read_init
 
 
 !************************************************
+!************************************************
+!************************************************
+!************************************************
+!************************************************
+
 
 subroutine profiles(&
      !     I:
@@ -747,7 +539,12 @@ subroutine profiles(&
 end subroutine profiles
 
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!************************************************
+!************************************************
+!************************************************
+!************************************************
+
+
 subroutine calc_fracfold(&
                                 !I:	 
      &F,&
