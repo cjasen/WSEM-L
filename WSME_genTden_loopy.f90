@@ -10,6 +10,7 @@ program WSME_genTden_loopy
   use calc_interact
   use thermo
   use thermoab
+  use disulfide_module
   implicit none
   real(kind=db)::parv(nparmax) !vector of npar parameters on which the energy depends (i.e. q, eps, ...)
   real(kind=db):: Phi(3),natbase(3)
@@ -34,6 +35,9 @@ program WSME_genTden_loopy
   !  real(kind=db):: nu(1:N,1:N)
 
   logical,parameter :: onlyC=.false.
+
+  integer, allocatable :: SS_matrix(:,:) ! matrix with the disulfide bonds
+  integer :: num_rows, num_cols ! auxiliar variables to build the matrix
 
   !we give dimension to matrix
   read (*,*) N
@@ -74,6 +78,9 @@ program WSME_genTden_loopy
   if(wmprof) open(35,file='mprofile.dat') !profiles
   if(wstr) open(40,file='strings.dat') !native strings
 
+  ! Disulfide bridges
+  call get_disulfide_bonds_matrix(pdb_code, SS_matrix, num_rows, num_cols) ! SS_matrix: each row is a bond, the two columns have the two residues which conformates it
+
   aaux=1
   baux=N
   allocate(auxe(4,aaux:baux,aaux:baux))
@@ -91,7 +98,7 @@ program WSME_genTden_loopy
 
         call calc_e_Phi(& ! calculates interaction between residues without taking into account their folding state (conceptually: h_ij)
                                 !     I:
-             &          T,cden,parv,&
+             &          T,cden,parv,SS_matrix,&
                                 !     O:
              &          e,Phi,natbase)
         !     natbase,phi (1,2,3)= completely native and unfolded baselines for FRT,H/RT,C/R
@@ -117,7 +124,6 @@ program WSME_genTden_loopy
                    &)
 !!$ !PIER: To build the pure WSME limit, without loops, comment lines below: from here...
               logZetaab(aaux,baux)=logZetaaux
-!              write (*,*) "check: a,b,logZetaab= ",aaux,baux,logZetaaux
               EonRTab(aaux,baux)=EonRTaux
               EonRTabsquared(aaux,baux)=EonRTsquaredaux !PIER: added this  27/8/24
               !              ConRab(aaux,baux)=ConRaux
@@ -131,30 +137,29 @@ program WSME_genTden_loopy
         enddo
 
 
-      !we have to add the off-set of the all-native case:
-      !Hn is betaH^nn
+         !we have to add the off-set of the all-native case:
+         !Hn is betaH^nn
+         Hn=0.0_db
+         Un=0.0_db
+         Unsquared=0.0_db !PIER: added this  27/8/24
+         Cvn=0.0_db
+         do j=1,N
+               do i=1,j
+               do k=i,j
+                  do l=k,j
+                     !auxe is just e(), the matrix calculated with calc_e_Phi_genTden_loopy
+                     Hn(i,j)=Hn(i,j)+auxe(1,k,l) ! Hn(i,j)=(effective energy of the i,j native island)/RT (being 0 the completely unfolded energy as reference)
+                     Un(i,j)=Un(i,j)+auxe(2,k,l)
+                     Cvn(i,j)=Cvn(i,j)+auxe(3,k,l)
+                     if (k.eq.l) then
+                        Hn(i,j)=Hn(i,j)- auxe(4,k,k) !PIER: added this 27/08/2024
+                     endif
+                  enddo
+               enddo
+               Unsquared(i,j)=Un(i,j)**2
 
-      Hn=0.0_db
-      Un=0.0_db
-      Unsquared=0.0_db !PIER: added this  27/8/24
-      Cvn=0.0_db
-   	do j=1,N
-      	   do i=1,j
-              do k=i,j
-                 do l=k,j
-                  !auxe is just e(), the matrix calculated with calc_e_Phi_genTden_loopy
-                    Hn(i,j)=Hn(i,j)+auxe(1,k,l) ! Hn(i,j)=(effective energy of the i,j native island)/RT (being 0 the completely unfolded energy as reference)
-                    Un(i,j)=Un(i,j)+auxe(2,k,l)
-                    Cvn(i,j)=Cvn(i,j)+auxe(3,k,l)
-                    if (k.eq.l) then
-                       Hn(i,j)=Hn(i,j)- auxe(4,k,k) !PIER: added this 27/08/2024
-                    endif
-                 enddo
-              enddo
-              Unsquared(i,j)=Un(i,j)**2
-
-           enddo
-  	enddo 
+            enddo
+         enddo 
 
         !PIER: added this part for Esquared and C_fixedconf
         do j=1,N !PIER: added this do loop  27/8/24
@@ -166,10 +171,10 @@ program WSME_genTden_loopy
         EonRTabtot=EonRTab+Un
         ConRab_fixedconftot=ConRab_fixedconf+Cvn !PIER: added this  27/8/24
 
-   !finally we calculate partition function and observables:
-   !PIER: CHANGE calc_thermo:
+         !finally we calculate partition function and observables:
+         !PIER: CHANGE calc_thermo:
 
-        !notice calc_thermoab was in bucle of (a->b) while here the argument is just the number of residues N
+        !notice calc_thermoab was in bucle of (a->b) while here the argument is just the number of residues N bc the bucle is within the subroutine
         call calc_thermo2(N, logZetaab, EonRTabtot,EonRTabsquaredtot, ConRab_fixedconftot, sigmaab,sigmaiab,& !calculates contribution of folded islands (m=1) on a sea of unfolded (m=0)
              &logZeta, EonRT, ConR,ConRfixave, Mavg, sigmaavg,fracfold,Mi,sigmai,Mij,sigmaij)
 
@@ -188,7 +193,7 @@ program WSME_genTden_loopy
         if (wFprof.or.wmprof) then
            F=0.
            nu=0.
-           call profiles(e,wmprof,F,nu)   ! I think profiles doesn't work
+           call profiles(e,wmprof,F,nu)   ! Profiles is incomplete
            if(wFprof) then
               do iM=0,N
                  write(30,*) cden,T,iM,R*T*F(iM),R*T*(F(iM)+Phi(1))
@@ -315,8 +320,11 @@ subroutine read_init(& !we call this routine at the very start of the main
   read(*,*) wMisland
   !     wstr=.true. -> calculate native strings, else skip
 
+  pdb_code = cmapfile(1:4) !.map file is in format PDB.map, for example 1DPX.map. PDB has always 4 characters. Also, pdb_code is defined in moudle protdep_par
+
   write(*,*) '************************************************************************************'
   write(*,*) "INPUT:"
+  write(*,*) "PDB:", pdb_code
   write(*,*) "N=",N
   write(*,*) "N1=",N1
   write(*,*) "Mw=",Mw

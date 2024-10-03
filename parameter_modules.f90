@@ -47,6 +47,7 @@ module protdep_par
   save
  !distancia entre carbonos alfa calculado con el programa radPDB.py
   integer :: N,N1 !Number of residues, number of elec contacts
+  character(len=4) :: pdb_code ! PDB of the protein. For example, 1DPX
   real(kind=db) :: Mw ! protein mass [grams/mol]
   real(kind=db), allocatable :: delta(:,:,:),rCalpha(:,:) !contact maps
   real, allocatable :: v(:,:)!list of atom-atom contacts, with their charge and distance; namely:

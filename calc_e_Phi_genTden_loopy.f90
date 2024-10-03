@@ -13,13 +13,14 @@ contains
 
   subroutine calc_e_Phi(&
                                 !     I:
-       &  T,c_den,y, &
+       &  T,c_den,y,SS_matrix, &
                                 !hidden input: in modules
                                 !     O:
        &  e,Phi,natbase)
 
 
     real(kind=db),intent(in):: y(nparmax),T,c_den !c_den= denaturant concentration
+    integer, intent(in) :: SS_matrix(:,:) 
     real(kind=db),intent(out):: e(4,N,N),Phi(3),natbase(3) !native  baselines (the unfolded one are the Phi: 1->F,2->H,3->C) 
     !     e(1,i,j)= h(i,j)/RT= eq (37b,c)
     !     e(2,i,j)=v(i,j)/RT  
@@ -98,6 +99,10 @@ contains
        end do
     enddo
 
+    !Disulfide bridge. As a covalent link, we overwrite the h_ij of two bridged residues with a very high value
+    do i=1,size(SS_matrix,1)
+         !e(1,SS_matrix(i,1),SS_matrix(i,2)) = 100000.0_db
+    end do
 
     !Cálculo de las Phis
     Phi(1)=aonR*((T-T0C)/T-log(T/T0C))+ bonR*((T0C**2-T**2)/(2*T)+T0C*log(T/T0C)) !Free energy

@@ -71,13 +71,12 @@ contains
     real(kind=db),intent(out):: logZeta,EonRT, ConR,ConRfixed, M, sigma,mi(:), sigmai(:),mij(:,:),sigmaij(:,:)
 
    !*********************************************************************************************************************************
-   !sigmaab is sigmaaux or sigma, calculated in calc_thermo_ab. It has the value of <s>_(a,b) for each (a,b) island
-   !sigmaiab has the sigma per residue <s_i>_(a,b) withot the summatory on (a,b) ???
+   !sigmaab is sigmaaux or sigma, calculated in calc_thermo_ab. It has the value of <m*s>^(a->b) for each (a->b) island
+   !sigmaiab has the sigma per residue <m_i*s_i>_(a->b) for each possible (a->b) island. It's an hypermatrix of 3 dimensions (residue, and two coordenates of the island)
 
-   !sigmai is <s_i>, i.e. the probability of residue "i" to have s_i=1. Idem with mi
-   !sigmaij is the probability that all residues from i->j have s=1 (and i-1 and j+1 = 0?) ?
+   !sigmai is <m_i*s_i>, i.e. the probability of residue "i" to have s_i=1. Idem with mi
+   !sigmaij is the probability that all residues from i->j have s=1 (and i-1 and j+1 = 0?) ? Probably <prod_k m_k*s_k>
 
-   !what is <prod_k m_k*s_k> with k=i...j ? Is sigmaij?
    !*********************************************************************************************************************************
 
     integer :: i,j,k,l,offset
@@ -96,13 +95,13 @@ contains
     enddo
 
 
-    if(wEave.or.wC) then
+    if(wEave.or.wC) then !Now, these O are Delta_Theta, which depend on Delta_Phi (the same concept, applied to loop island on native sea istead of native sea on unfolded sea)
        !     energia e(2,i,j)=vij/RT
        O=0.0_db
        do j=1,leng
           do i=1,j
              if (j== 1) then
-                O(i, j) = EonRTab(i, 1)
+                O(i, j) = EonRTab(i, 1) !This things were calculated on calc_thermo_ab
              else
                 O(i, j) = EonRTab(i, j) - EonRTab(i, j - 1)
              end if
@@ -174,7 +173,6 @@ contains
        Z=1.0_db
        do i=1,j
           Z=Z+H(i,j)*A(i)
-          !write(*,*) i,j,Z
        enddo
        logZeta=logZeta+log(Z)
        Z=1.0_db/Z
@@ -224,7 +222,7 @@ contains
           enddo
        endif
 
-       !      m and sigma  (nativefraction)
+       !      m and sigma  (nativefraction). This should be <m> and <m*s>, for the whole chain
        if(wMave) then
 
           do i=1,j
@@ -255,7 +253,7 @@ contains
 
     !    m y sigma de cada resido
     if(wMres) then
-       do k=1,leng
+       do k=1,leng ! remember leng=N always
           D=0.0_db
           E=0.0_db
           A=0.0_db
@@ -278,7 +276,7 @@ contains
 
              do i=1,j
                 if (j == k) then
-                   D(i)=Zaux*H(i,j)*D(i)+A(i)
+                   D(i)=Zaux*H(i,j)*D(i)+A(i) ! The Delta_Theta for <m_i> are 1 if k==j and 0 if not
                 else
                    D(i)=Zaux*H(i,j)*D(i)
                 endif
@@ -287,11 +285,8 @@ contains
 
              Mi(k)=0.0_db
              do i=1,j+1
-                Mi(k)=Mi(k)+D(i)
+                Mi(k)=Mi(k)+D(i) ! <m_i>. Notice this calculation doesn't need any data from calc_thermo_ab, as it's independent of the existence of loops
              enddo
-
-
-
 
              do i=1,j
                 if (j > k .and. i .le. k) then
@@ -300,7 +295,7 @@ contains
                    E(i)=Zaux*H(i,j)*E(i)+A(i)*(sigmaiab(k,i,j))
                 else
                    E(i)=Zaux*H(i,j)*E(i)
-                endif !PIER: esto de arriba se podría simplificar  con solo la primera expresión, yaque sigmaiab(k,i,j) debería ser 0 si k<i o k>j
+                endif !PIER: esto de arriba se podría simplificar  con solo la primera expresión, ya que sigmaiab(k,i,j) debería ser 0 si k<i o k>j
 
              enddo
              E(j+1)=Zaux*sigmai(k)
@@ -395,8 +390,6 @@ contains
     ConRfixed=X2
     M=M/leng 
     sigma=sigma/leng
-
-    write(*,*)  Y,X**2,X2
 
     return
 

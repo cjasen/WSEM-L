@@ -123,7 +123,7 @@ module thermoab
          enddo
       enddo
 
-      ! O means "output" and has the energy (enthalpy?) contribution
+      ! O are, I think the Delta_Phi where Phi is the contribution of changing the state of one residue to a certain observable. O is the energy.
       if(wEave.or.wC) then
          !     energia e(2,i,j)=vij/RT
          O=0.0_db
@@ -142,7 +142,7 @@ module thermoab
          enddo
       endif
 
-      ! O2 is another output, with the specific heat (yes, another terrible name bc specific heat is e(3) and its output is O2)
+      ! O2 is the contribution for the specific heat (yes, another terrible name bc specific heat is e(3) and its output is O2)
       if(wC) then
          !     cal spec della configurazione e(3,i,j)=dij/R
          O2=0.0_db
@@ -176,21 +176,20 @@ module thermoab
 
          Z=1.0_db
          do i=1,j
-            Z=Z+H(i,j)*A(i)
-            !write(*,*) i,j,Z
+            Z=Z+H(i,j)*A(i) ! Pablo's nomenclature: xi_j = 1 + sum_i A_i^(j-1)*w_ij, here Z=xi and H(i,j)=w_ij
          enddo
          logZeta=logZeta+log(Z)
          Z=1.0_db/Z
 
          do i=1,j
-            A(i)=Z*H(i,j)*A(i)
+            A(i)=Z*H(i,j)*A(i) ! A_i^j = A_i^(j-1)*w_ij/xi_j for i<=j
          enddo
-         A(j+1)=Z
+         A(j+1)=Z ! for A_(j+1)^j = 1/xi_j (now, Z=1/xi_j)
 
          !     energia media 
          if(wEave.or.wC) then
             do i=1,j
-               B(i)=Z*H(i,j)*B(i)+O(i,j)*A(i)
+               B(i)=Z*H(i,j)*B(i)+O(i,j)*A(i) ! remember that O is Phi_i^j - Phi_i^(j-1)
             enddo
             B(j+1)=Z*X
 
@@ -240,7 +239,7 @@ module thermoab
          endif
       enddo
 
-      !   magnetization of residue k per island -> sigma_k(a,b)
+      !   magnetization of residue k per island -> sigma_k(a,b). That it's <m_i*s_i>^(a,b) 
 
       sigmai=0.0_db
       do k=1,N !PIER: changed leng ->N . This was an error! 5/9/24
@@ -274,7 +273,7 @@ module thermoab
 
             sigmai(k)=0.0_db 
             do i=1,j+1
-               sigmai(k)=sigmai(k)+D(i)
+               sigmai(k)=sigmai(k)+D(i) 
             enddo
 
          enddo
