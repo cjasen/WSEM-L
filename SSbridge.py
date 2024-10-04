@@ -52,6 +52,6 @@ if __name__ == "__main__":
     matrix = get_disulfide_bonds(pdb_code)
     
     # Save the matrix to a file
-    save_matrix_to_file(matrix, 'disulfide_bonds.csv')
+    save_matrix_to_file(matrix, 'Input/disulfide_bonds.csv')
 
 

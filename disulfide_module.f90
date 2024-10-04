@@ -20,7 +20,7 @@ module disulfide_module
         endif
 
         ! Abrir el archivo CSV para contar las filas (pares de disulfuro)
-        open(unit=10, file='disulfide_bonds.csv', status='old', action='read', iostat=ios)
+        open(unit=10, file='Input/disulfide_bonds.csv', status='old', action='read', iostat=ios)
         if (ios /= 0) then
             print *, "Error opening the CSV file."
             stop
@@ -39,7 +39,7 @@ module disulfide_module
 
         ! Cerrar y reabrir el archivo para leer los datos después de contar las filas
         close(10)
-        open(unit=10, file='disulfide_bonds.csv', status='old', action='read', iostat=ios)
+        open(unit=10, file='Input/disulfide_bonds.csv', status='old', action='read', iostat=ios)
         if (ios /= 0) then
             print *, "Error reopening the CSV file."
             stop

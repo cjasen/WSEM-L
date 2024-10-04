@@ -71,12 +71,12 @@ program WSME_genTden_loopy
   ! calculate Minf=Mavg(T=481K)
   Minf=0._db
 
-  open(20,file='profthermo.dat')
-  open(50,file='magnet.dat')
-  open(60,file='ener.dat')
-  if(wFprof) open(30,file='Fprof.dat') !profiles
-  if(wmprof) open(35,file='mprofile.dat') !profiles
-  if(wstr) open(40,file='strings.dat') !native strings
+  open(20,file='Output/profthermo.dat')
+  open(50,file='Output/magnet.dat')
+  open(60,file='Output/ener.dat')
+  if(wFprof) open(30,file='Output/Fprof.dat') !profiles
+  if(wmprof) open(35,file='Output/mprofile.dat') !profiles
+  if(wstr) open(40,file='Output/strings.dat') !native strings
 
   ! Disulfide bridges
   call get_disulfide_bonds_matrix(pdb_code, SS_matrix, num_rows, num_cols) ! SS_matrix: each row is a bond, the two columns have the two residues which conformates it
@@ -279,7 +279,6 @@ subroutine read_init(& !we call this routine at the very start of the main
   integer::  i,j,l,io_status
   real(kind=db):: difftot,nASA,nct,valor
   double precision s1,s2,s3,s4,s5,s6,s7,s8,s9,s10,s11,s12
-
   ! calculated with the logarithm to better manage big numbers. 27*log(10) is the conversion from liters to A^3
   prefac_kappa = 0.5*(log(2.)+log(Navo)+2*log(qe)-27*log(10.)-log(vac_eps0)-log(kB))
   prefac_kappa = exp(prefac_kappa)
@@ -346,7 +345,7 @@ subroutine read_init(& !we call this routine at the very start of the main
   nct=0 !nº contactos ct
   !VdW contact map
   delta = 0._db
-  open(1,file=cmapfile)
+  open(1,file="Input/" // trim(cmapfile))
 1 read(1,*,end=2) i,j,difftot 
   !  if (i.le.j-2) then
   if (i.le.j) then
@@ -357,7 +356,7 @@ subroutine read_init(& !we call this routine at the very start of the main
 2 close(1)
 
   rCalpha=0.0_db
-  open(2, file=mapaCalpha, status='old', action='read')
+  open(2, file="Input/" // trim(mapaCalpha), status='old', action='read')
   do
      read(2, *, iostat=io_status) i, j, valor
      if (io_status /= 0) exit
@@ -368,7 +367,7 @@ subroutine read_init(& !we call this routine at the very start of the main
 
   !Contribuciones electricas
   v = 0._db
-  open(31,file=elecmapfile)
+  open(31,file="Input/" // trim(elecmapfile))
   do l=1,N1
      read(31,*) v(l,1),v(l,2),v(l,3),v(l,4),v(l,5)
      !v(k,1)=residue to which the first atom involved in a-a contact k belongs; 
@@ -381,7 +380,7 @@ subroutine read_init(& !we call this routine at the very start of the main
 
   nASA=0 !nº contactos ASA
   !Mapa solvatación
-  open(12,file=solvmapfile)
+  open(12,file="Input/" // trim(solvmapfile))
 3 read(12,*,end=4) i,j,s1,s2,s3,s4,s5,s6,s7,s8,s9,s10,s11,s12
   !write(*,*) 's1, s9 =',s1,s9
   !   if (i.le.j-2) then
