@@ -138,13 +138,22 @@ program WSME_genTden_loopy
               do k=1,N
                  sigmaiab(k,aaux,baux)=sigmaiaux(k)
               enddo
-              !do k=1,ST_length
-              !    sigma_st_ab_matrix(k,aaux,baux)=sigma_st_ab_aux(k) ! _aux is an array with ST_interval columns, and a value for one (a,b) interval for each (S,T)
-              !end do
+              do k=1,ST_length
+                  sigma_st_ab_matrix(k,aaux,baux)=sigma_st_ab_aux(k) ! _aux is an array with ST_interval columns, and a value for one (a,b) interval for each (S,T)
+              end do
 !!$              !...to here.
            enddo
         enddo
 
+        write(*,*) "For st=(16,32)"
+        write(*,*) "sigma_st_ab_matrix(1,10,35)=",sigma_st_ab_matrix(1,10,35) !st1 in ab
+        write(*,*) "sigma_st_ab_matrix(1,20,35)=",sigma_st_ab_matrix(1,20,35) !st1 out of ab
+        write(*,*) "sigma_st_ab_matrix(1,60,100)=",sigma_st_ab_matrix(1,60,100)!st1out of ab, but st2 in ab
+
+        write(*,*) "For st=(64,92)"
+        write(*,*) "sigma_st_ab_matrix(2,10,35)=",sigma_st_ab_matrix(2,10,35) 
+        write(*,*) "sigma_st_ab_matrix(2,20,35)=",sigma_st_ab_matrix(2,20,35) 
+        write(*,*) "sigma_st_ab_matrix(2,60,100)=",sigma_st_ab_matrix(2,60,100)
 
          !we have to add the off-set of the all-native case:
          !Hn is betaH^nn

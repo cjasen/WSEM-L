@@ -74,7 +74,7 @@ module thermoab
       real(kind=db):: Zeta,O2(leng,leng),B2(leng+1),X2
       real(kind=db):: aux,aux1,auxmin,auxmax,aux1min,aux1max,auxHmin,auxHmax !FOR CHECKS
       integer:: auximin,auximax,auxjmin,auxjmax !FOR CHECKS
-
+      integer:: s,t,p
       offset=a_start-1 !to know in which part of the whole residue chain our island starts
 
       H=0.0_db
@@ -240,31 +240,46 @@ module thermoab
             enddo
          endif
 
-         ! magnetization per island for <prod_k=S^T m_k sigma_k>
-         !if (wProd_ms) then
-         !  do k=1,ST_interval
-         !      s=S_interval(k)
-         !      t=T_interval(k)
-         !      
-         !      if (s > i .and. j==t) then
-         !         E(i)=Z*H(i,j)*E(i)+A(i)
-         !      else
-         !         E(i)=Z*H(i,j)*E(i)
-         !      end if
-         !      E(j+1)=Zaux*sigma_st_ab(k)
-         !
-         !      sigma_st_ab(k)=0._db
-         !      do i=1,j+1
-         !         sigma_st_ab(k)=sigma_st_ab(k)+E(i)
-         !      enddo
-         !    
-         !  end do ! (s,t) interval
-         !
-         !end if 
-
       enddo ! j=1,leng
 
-  
+      if (wProd_ms) then
+         do p=1,ST_length
+            s=S_interval(p)
+            t=T_interval(p)
+            E=0._db
+            A=0._db
+            A(1)=1.0_db
+
+            ! This section is quite inefficient because we do the same calculations in the previous and in the next section. The whole section makes the program like 1s slower per temperature
+            do j=1,leng
+               Zaux=1.0_db
+               do i=1,j
+                  Zaux=Zaux+H(i,j)*A(i)
+               enddo
+               Zaux=1.0_db/Zaux
+               do i=1,j
+                  A(i)=Zaux*H(i,j)*A(i)
+               enddo
+               A(j+1)=Zaux  
+            
+               do i=1,j 
+                  if (s > (i+offset) .and. t == (j+offset)) then ! <prod m sigma>^(ab) = O(s-i)*d_tj where O is the Heavyside function and d the Kroneker's delta
+                     E(i)=Z*H(i,j)*E(i)+A(i)
+                  else
+                     E(i)=Z*H(i,j)*E(i)
+                  end if
+               end do
+               E(j+1)=Z*sigma_st_ab(p)
+
+               sigma_st_ab(p)=0.0_db
+               do i=1,j+1
+                  sigma_st_ab(p)=sigma_st_ab(p)+E(i)
+               enddo
+            
+            end do ! j
+
+         end do ! k in ST_length
+      end if
 
       !   magnetization of residue k per island -> sigma_k(a,b). That it's <m_i*s_i>^(a,b) 
 
