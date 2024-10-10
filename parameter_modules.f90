@@ -31,8 +31,10 @@ end module phys_const
    save
    integer,parameter:: nparmax=7 !!number of model parameters
    real(kind=db) :: Tmin, Tmax,deltaT,T_ref
+   integer :: ST_length
+   integer, allocatable :: S_interval(:), T_interval(:) ! intervals to calculate <prod_k=S^T m_k sigma_k>
    real(kind=db) :: cdenmin, cdenmax,deltacden
-   logical :: wEave,wC,wMave,wfoldfr,wstr,wFprof,wmprof, wMres, wMisland
+   logical :: wEave,wC,wMave,wfoldfr,wstr,wFprof,wmprof, wMres, wMisland, wProd_ms
    ! wEave= calculates the average energy; wC: calculate specific heat, wMave=calculate average "magnetization", wfoldfr: with fraction folded; wst=with strings, wFprof=with F profiles, wmprof=with m profiles
    ! character(len=80):: outtherm,outprof,outstring,outmprofile
    ! real(kind=db):: parv(nparmax)

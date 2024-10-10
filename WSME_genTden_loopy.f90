@@ -29,6 +29,7 @@ program WSME_genTden_loopy
   real(kind=db), allocatable::Mi(:),sigmai(:),Mij(:,:),sigmaij(:,:) !arrays to allocate the magnetizations per residue and per island					        								 
   real(kind=db):: logZetaaux, EonRTaux, ConRaux, sigmaaux,Maux,sig,aux !auxilliar variables 		                 					 
   real(kind=db), allocatable ::              sigmaiaux(:)
+  real(kind=db), allocatable :: sigma_st_ab_matrix(:,:,:), sigma_st_ab_aux(:)
   real(kind=db):: ConRtest,ConRfixave !PIER: checks 27/8/24
   integer:: i,j,k,iM,l									 
   integer:: aaux,baux !variables to go through islands								 
@@ -55,6 +56,9 @@ program WSME_genTden_loopy
                                 !     O:
        &     parv)
 
+  allocate(sigma_st_ab_matrix(1:ST_length,1:N,1:N))
+  allocate(sigma_st_ab_aux(1:ST_length))
+
   !if only the specific heat is requested, the input flags are redefined accordingly:
   if(onlyC) then
      wEave=.false.
@@ -64,6 +68,7 @@ program WSME_genTden_loopy
      wMave=.false.
      wmprof=.false.
      wstr=.false.
+     wProd_ms=.false.
   endif
 
   ! Mavg(T=0K)=1:
@@ -112,6 +117,7 @@ program WSME_genTden_loopy
         ConRab=0._db
         sigmaab=0._db
         sigmaiab=0._db
+        sigma_st_ab_matrix=0._db
         EonRTabsquared=0._db !PIER: added this and below (4 lines) 27/8/24
         ConRab_fixedconf=0._db
         EonRTabsquaredtot=0._db
@@ -120,8 +126,8 @@ program WSME_genTden_loopy
         do aaux=1,N
            do baux=aaux,N
               call calc_thermoab(aaux,baux-aaux+1,auxe,& !calculates the contributions of each (a->b) island of m=1,s=0 in a sea of m=1,s=1
-                   &  logZetaaux,EonRTaux,EonRTsquaredaux,ConR_fixedconfaux,ConRaux,sigmaaux,sigmaiaux,fracfold& !sigmaaux is <s>_(a,b). sigmai(aux) is <s_i>_ab = sum_(a,b) f^i_(a,b)*Z^(a,b) where f=1 if a in (a,b) and 0 if not
-                   &)
+                   &  logZetaaux,EonRTaux,EonRTsquaredaux,ConR_fixedconfaux,ConRaux,sigmaaux,sigmaiaux,fracfold,sigma_st_ab_aux) !sigmaaux is <s>_(a,b). sigmai(aux) is <s_i>_ab = sum_(a,b) f^i_(a,b)*Z^(a,b) where f=1 if a in (a,b) and 0 if not
+                   
 !!$ !PIER: To build the pure WSME limit, without loops, comment lines below: from here...
               logZetaab(aaux,baux)=logZetaaux
               EonRTab(aaux,baux)=EonRTaux
@@ -132,6 +138,9 @@ program WSME_genTden_loopy
               do k=1,N
                  sigmaiab(k,aaux,baux)=sigmaiaux(k)
               enddo
+              !do k=1,ST_length
+              !    sigma_st_ab_matrix(k,aaux,baux)=sigma_st_ab_aux(k) ! _aux is an array with ST_interval columns, and a value for one (a,b) interval for each (S,T)
+              !end do
 !!$              !...to here.
            enddo
         enddo
@@ -276,7 +285,7 @@ subroutine read_init(& !we call this routine at the very start of the main
   character(len=80):: elecmapfile
   character(len=80):: solvmapfile
   character(len=80):: MapasContacto
-  integer::  i,j,l,io_status
+  integer::  i,j,l,p,io_status
   real(kind=db):: difftot,nASA,nct,valor
   double precision s1,s2,s3,s4,s5,s6,s7,s8,s9,s10,s11,s12
   ! calculated with the logarithm to better manage big numbers. 27*log(10) is the conversion from liters to A^3
@@ -291,6 +300,7 @@ subroutine read_init(& !we call this routine at the very start of the main
   !  csi DeltaS eps_eff I DeltaC a b  !as in Naganathan 2012
   !  concdenamin, concdenatmax, deltaconcdenat !(en nuestro caso, 0,0,1 ; el valor diferente de 1 sirve para salir del bucle)
   !  Tmin, Tmax, deltaT 
+  !  n, x1, x2... y1, y2... the first number is the number of (S,T) intervals you want to calculate <prod_k=S^T m_k sigma_k>. Then it follows the values of S, and then those for T
   !  cmapfile
   !  wEave   ! =.true., .false. triggers the calculation of the average energy
   !  wC      ! =.true., .false. triggers the calculation of the specific heat
@@ -299,10 +309,16 @@ subroutine read_init(& !we call this routine at the very start of the main
   !  wstr    ! =.true., .false. triggers the calculation of the native strings
   !  wFprof  ! =.true., .false. triggers the calculation of the free energy profiles 
   !  wmprof  ! =.true., .false. triggers the calculation of the profile for folding probability of any residue <m_i>_M 
+  !  wProd_ms                   triggers the calculation of <prod_k=S^T m_k sigma_k>
   read(*,*) Mw
   read(*,*) (parv(i),i=1,nparmax)
   read(*,*) Tmin,Tmax,deltaT,T_ref
   read(*,*) cdenmin,cdenmax,deltacden
+
+  read(*,*) ST_length
+  allocate(S_interval(ST_length), T_interval(ST_length))
+  read(*,*) (S_interval(p), p=1,ST_length), (T_interval(p), p=1,ST_length)
+
   read(*,*) mapaCalpha     !rCalpha
   read(*,*) cmapfile       !PBI.map
   read(*,*) elecmapfile    !PBI_elec.map
@@ -317,9 +333,12 @@ subroutine read_init(& !we call this routine at the very start of the main
   read(*,*) wmprof
   read(*,*) wMres
   read(*,*) wMisland
+  read(*,*) wProd_ms
+  !read(*,*) wProd_ms
   !     wstr=.true. -> calculate native strings, else skip
 
   pdb_code = cmapfile(1:4) !.map file is in format PDB.map, for example 1DPX.map. PDB has always 4 characters. Also, pdb_code is defined in moudle protdep_par
+
 
   write(*,*) '************************************************************************************'
   write(*,*) "INPUT:"
@@ -333,13 +352,23 @@ subroutine read_init(& !we call this routine at the very start of the main
   write(*,*) "Tmin,Tmax=",Tmin,Tmax
   write(*,*) "step,T_ref=",deltaT,T_ref
   write(*,*) "cdenmin,cdenmax,deltacden=",cdenmin,cdenmax,deltacden
+
+  write(*,'(A)', advance="no") " ST intervals: "
+  do i = 1, ST_length
+      write(*,'(A,I0,A,I0,A)', advance="no") "(", S_interval(i), ",", T_interval(i), ")"
+      if (i < ST_length) then
+          write(*,'(A)', advance="no") ", "
+      end if
+  end do
+  print * 
+
   write (*,*) "rCalpha map: ",mapaCalpha
   write (*,*) "contact map: ",cmapfile
   write (*,*) "contact map: ",cmapfile
   write (*,*) "elecmap: ",elecmapfile
   write(*,*) "solvmap: ",solvmapfile
   write (*,*) "Caso: ",MapasContacto
-  write(*,*) "wEave,wC,wMave,wfoldfr,wstr,wFprof,wmprof,wMres,wMisland= ",wEave,wC,wMave,wfoldfr,wstr,wFprof,wmprof,wMres,wMisland
+  write(*,*) "wEave,wC,wMave,wfoldfr,wstr,wFprof,wmprof,wMres,wMisland",wEave,wC,wMave,wfoldfr,wstr,wFprof,wmprof,wMres,wMisland
   write(*,*) '************************************************************************************'
 
   nct=0 !nº contactos ct
