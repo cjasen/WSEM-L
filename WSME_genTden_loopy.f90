@@ -29,7 +29,7 @@ program WSME_genTden_loopy
   real(kind=db), allocatable::Mi(:),sigmai(:),Mij(:,:),sigmaij(:,:) !arrays to allocate the magnetizations per residue and per island					        								 
   real(kind=db):: logZetaaux, EonRTaux, ConRaux, sigmaaux,Maux,sig,aux !auxilliar variables 		                 					 
   real(kind=db), allocatable ::              sigmaiaux(:)
-  real(kind=db), allocatable :: sigma_st_ab_matrix(:,:,:), sigma_st_ab_aux(:)
+  real(kind=db), allocatable :: sigma_st_ab_matrix(:,:,:), sigma_st_ab_aux(:), sigma_st(:)
   real(kind=db):: ConRtest,ConRfixave !PIER: checks 27/8/24
   integer:: i,j,k,iM,l									 
   integer:: aaux,baux !variables to go through islands								 
@@ -56,8 +56,8 @@ program WSME_genTden_loopy
                                 !     O:
        &     parv)
 
-  allocate(sigma_st_ab_matrix(1:ST_length,1:N,1:N))
-  allocate(sigma_st_ab_aux(1:ST_length))
+  allocate(sigma_st_ab_matrix(1:ST_length,1:N,1:N),sigma_st_ab_aux(1:ST_length),sigma_st(1:ST_length))
+  
 
   !if only the specific heat is requested, the input flags are redefined accordingly:
   if(onlyC) then
@@ -77,12 +77,17 @@ program WSME_genTden_loopy
   Minf=0._db
 
   open(20,file='Output/profthermo.dat')
+  !write(20,*) "#cden        T        (Mavg-Minf)/(M0-Minf)        sigmaavg       Free energy        Enthalpy        R*(EnthonRT-FreeonRT)      Cp     R*Phi(3)      R*natbase(3)" !error with line length of compilator
   open(50,file='Output/magnet.dat')
+  write(50,*) "#T       Residue #i       m_i         sigma_i         m_i - sigma_i "
   open(60,file='Output/ener.dat')
   if(wFprof) open(30,file='Output/Fprof.dat') !profiles
   if(wmprof) open(35,file='Output/mprofile.dat') !profiles
   if(wstr) open(40,file='Output/strings.dat') !native strings
-
+  if(wProd_ms) then
+      open(70,file="Output/sigma_st.dat") !s t <prod_k=s^t m_k sigma_k>
+      write(70,*) "#[Cden]    T   <prod_k=s^t m_k sigma_k> for all (s,t) intervals"
+  end if
   ! Disulfide bridges
   call get_disulfide_bonds_matrix(pdb_code, SS_matrix, num_rows, num_cols) ! SS_matrix: each row is a bond, the two columns have the two residues which conformates it
 
@@ -118,6 +123,7 @@ program WSME_genTden_loopy
         sigmaab=0._db
         sigmaiab=0._db
         sigma_st_ab_matrix=0._db
+        sigma_st=0._db
         EonRTabsquared=0._db !PIER: added this and below (4 lines) 27/8/24
         ConRab_fixedconf=0._db
         EonRTabsquaredtot=0._db
@@ -132,7 +138,6 @@ program WSME_genTden_loopy
               logZetaab(aaux,baux)=logZetaaux
               EonRTab(aaux,baux)=EonRTaux
               EonRTabsquared(aaux,baux)=EonRTsquaredaux !PIER: added this  27/8/24
-              !              ConRab(aaux,baux)=ConRaux
               ConRab_fixedconf(aaux,baux)=ConR_fixedconfaux !PIER: added this  27/8/24
               sigmaab(aaux,baux)=sigmaaux
               do k=1,N
@@ -144,16 +149,6 @@ program WSME_genTden_loopy
 !!$              !...to here.
            enddo
         enddo
-
-        write(*,*) "For st=(16,32)"
-        write(*,*) "sigma_st_ab_matrix(1,10,35)=",sigma_st_ab_matrix(1,10,35) !st1 in ab
-        write(*,*) "sigma_st_ab_matrix(1,20,35)=",sigma_st_ab_matrix(1,20,35) !st1 out of ab
-        write(*,*) "sigma_st_ab_matrix(1,60,100)=",sigma_st_ab_matrix(1,60,100)!st1out of ab, but st2 in ab
-
-        write(*,*) "For st=(64,92)"
-        write(*,*) "sigma_st_ab_matrix(2,10,35)=",sigma_st_ab_matrix(2,10,35) 
-        write(*,*) "sigma_st_ab_matrix(2,20,35)=",sigma_st_ab_matrix(2,20,35) 
-        write(*,*) "sigma_st_ab_matrix(2,60,100)=",sigma_st_ab_matrix(2,60,100)
 
          !we have to add the off-set of the all-native case:
          !Hn is betaH^nn
@@ -189,12 +184,12 @@ program WSME_genTden_loopy
         EonRTabtot=EonRTab+Un
         ConRab_fixedconftot=ConRab_fixedconf+Cvn !PIER: added this  27/8/24
 
-         !finally we calculate partition function and observables:
-         !PIER: CHANGE calc_thermo:
+        !finally we calculate partition function and observables:
+        !PIER: CHANGE calc_thermo:
 
         !notice calc_thermoab was in bucle of (a->b) while here the argument is just the number of residues N bc the bucle is within the subroutine
-        call calc_thermo2(N, logZetaab, EonRTabtot,EonRTabsquaredtot, ConRab_fixedconftot, sigmaab,sigmaiab,& !calculates contribution of folded islands (m=1) on a sea of unfolded (m=0)
-             &logZeta, EonRT, ConR,ConRfixave, Mavg, sigmaavg,fracfold,Mi,sigmai,Mij,sigmaij)
+        call calc_thermo2(N, logZetaab, EonRTabtot,EonRTabsquaredtot, ConRab_fixedconftot, sigmaab,sigmaiab,sigma_st_ab_matrix,& !calculates contribution of folded islands (m=1) on a sea of unfolded (m=0)
+             &logZeta, EonRT, ConR,ConRfixave, Mavg, sigmaavg,fracfold,Mi,sigmai,Mij,sigmaij,sigma_st)
 
         !RESULTS:
 
@@ -239,6 +234,9 @@ program WSME_genTden_loopy
            enddo
         endif
 
+        if(wProd_ms) then
+            write(70,*) Cden, T, sigma_st ! remember sigma_st is an array with the value of <prod_k=s^t m_k sigma_k> for all (s,t) intervals
+        end if
 
         do i=1,N
            write(50,*) T, i, Mi(i),sigmai(i),(Mi(i)-sigmai(i)) ! magnetization for each residue
@@ -259,6 +257,7 @@ program WSME_genTden_loopy
   if(wFprof) close (30)
   if(wmprof) close (35)
   if(wstr)   close (40)
+  if(wProd_ms) close(70)
   close (20)
   close(50)  !PIER: added this two "close" 27/8/24
   close(60)

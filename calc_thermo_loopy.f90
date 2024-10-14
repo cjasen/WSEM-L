@@ -5,14 +5,14 @@ module thermo
   !    use protdep_par, only: N
   implicit none
   private  ! All entities are now module-private by default
-  public ::  calc_thermo2,dati2 !the number is bc the routine for calc_thermo_ab is called calc_thermo
+  public ::  calc_thermo2,dati2 !the number 2 appears bc the routine for calc_thermo_ab is called calc_thermo
 
 contains
 
   subroutine calc_thermo2(& 
-       & leng,logZetaab,EonRTab,EonRTabsquared,ConRabfixed,sigmaab,sigmaiab, & !PIER: changed arguments 27/8/24
+       & leng,logZetaab,EonRTab,EonRTabsquared,ConRabfixed,sigmaab,sigmaiab,sigma_st_ab_matrix, & 
                                 ! O:
-       & logZeta,EonRT,ConR,ConRfixed,Mavg,sigmaavg,fracfold,mi,sigmai,mij,sigmaij)   
+       & logZeta,EonRT,ConR,ConRfixed,Mavg,sigmaavg,fracfold,mi,sigmai,mij,sigmaij,sigma_st)   
     !     use defreal
     !     use phys_const
     !     use globalpar , only : wfoldfr
@@ -22,8 +22,10 @@ contains
     implicit none
     integer,intent(in) :: leng ! PIER: leng will be always N
 
-    real(kind=db),intent(in)::logZetaab(:,:),EonRTab(:,:),EonRTabsquared(:,:),ConRabfixed(:,:),sigmaab(:,:),sigmaiab(:,:,:) !PIER: changed this 27/8/24
+    real(kind=db),intent(in)::logZetaab(:,:),EonRTab(:,:),EonRTabsquared(:,:),ConRabfixed(:,:),sigmaab(:,:),sigmaiab(:,:,:)
     real(kind=db),intent(out):: logZeta,EonRT,ConR,ConRfixed,Mavg,sigmaavg,fracfold,mi(:),sigmai(:),mij(:,:),sigmaij(:,:)
+    real(kind=db) :: sigma_st_ab_matrix(:,:,:),sigma_st(:) 
+
     real(kind=db):: nu(1:leng,1:leng),F(0:leng)
 
     logical,parameter :: withmprof=.false.
@@ -37,8 +39,9 @@ contains
     nu=0.
     Mi=0.0_db
     sigmai=0.0_db
-    call dati2(logZeta,EonRT,ConR,ConRfixed,Mavg,sigmaavg,mi,sigmai,mij,sigmaij,&
-         leng,logZetaab,EonRTab,EonRTabsquared,ConRabfixed,sigmaab,sigmaiab)
+    sigma_st=0._db
+    call dati2(logZeta,EonRT,ConR,ConRfixed,Mavg,sigmaavg,mi,sigmai,mij,sigmaij,sigma_st,&
+         leng,logZetaab,EonRTab,EonRTabsquared,ConRabfixed,sigmaab,sigmaiab,sigma_st_ab_matrix)
     ! write(*,*) 'main:: structF/RT=' ,-logZeta
 
 !THE PROFILE PART BELOW WILL BE FIXED IN THE FUTURE:
@@ -58,29 +61,33 @@ contains
 
   subroutine dati2(& !PIER: changed arguments 27/8/24
                                 !     O:
-       & logZeta,EonRT,ConR,ConRfixed,M,sigma,mi,sigmai,mij,sigmaij, & 
+       & logZeta,EonRT,ConR,ConRfixed,M,sigma,mi,sigmai,mij,sigmaij,sigma_st, & 
                                 !     I:
-       &  leng,logZetaab,EonRTab,EonRTabsquared,ConRabfixed,sigmaab,sigmaiab)
+       &leng,logZetaab,EonRTab,EonRTabsquared,ConRabfixed,sigmaab,sigmaiab,sigma_st_ab_matrix)
     !   use defreal
     !   use protdep_par, only: N
     !   use globalpar
 
     implicit none
     integer,intent(in) :: leng ! PIER: leng =N in the relevant case
-    real(kind=db),intent(in):: logZetaab(:,:),EonRTab(:,:),EonRTabsquared(:,:),ConRabfixed(:,:),sigmaab(:,:),sigmaiab(:,:,:) !PIER: changed this 27/8/24
-    real(kind=db),intent(out):: logZeta,EonRT, ConR,ConRfixed, M, sigma,mi(:), sigmai(:),mij(:,:),sigmaij(:,:)
+    real(kind=db),intent(in):: logZetaab(:,:),EonRTab(:,:),EonRTabsquared(:,:),ConRabfixed(:,:),sigmaab(:,:),sigmaiab(:,:,:),&
+                               &    sigma_st_ab_matrix(:,:,:) !PIER: changed this 27/8/24
+    real(kind=db),intent(out):: logZeta,EonRT, ConR,ConRfixed, M, sigma,mi(:), sigmai(:),mij(:,:),sigmaij(:,:),sigma_st(:)
 
    !*********************************************************************************************************************************
    !sigmaab is sigmaaux or sigma, calculated in calc_thermo_ab. It has the value of <m*s>^(a->b) for each (a->b) island
    !sigmaiab has the sigma per residue <m_i*s_i>_(a->b) for each possible (a->b) island. It's an hypermatrix of 3 dimensions (residue, and two coordenates of the island)
 
    !sigmai is <m_i*s_i>, i.e. the probability of residue "i" to have s_i=1. Idem with mi
-   !sigmaij is the probability that all residues from i->j have s=1 (and i-1 and j+1 = 0?) ? Probably <prod_k m_k*s_k>
+   !sigmaij is the probability the average of sigma between residues (i,j)
+
+   !sigma_st_ab_matrix has, for each interval (s,t) that we define, the contribution of an (a,b) island
+   !sigma_st has the probability of each (s,t) interval of all residues in state m=1,sigma=1. It is <prod_k=s^t m_k sigma_k>
 
    !*********************************************************************************************************************************
 
-    integer :: i,j,k,l,offset
-    real(kind=db):: H(leng,leng),O(leng,leng),A(leng+1),B(leng+1),C(leng+1),D(leng+1),E(leng+1),Z,X,Y
+    integer :: i,j,k,l,p,s,t
+    real(kind=db):: H(leng,leng),O(leng,leng),A(leng+1),B(leng+1),C(leng+1),D(leng+1),E(leng+1),F(leng+1),Z,X,Y
     real(kind=db):: Zeta,O2(leng,leng),O3(leng,leng),B2(leng+1),X2,Zaux,logZetaaux
 
     H=1.0_db
@@ -161,6 +168,7 @@ contains
     C=0.0_db
     D=0.0_db
     E=0.0_db
+    F=0.0_db
     X=0.0_db
     X2=0.0_db
     Y=0.0_db
@@ -322,7 +330,6 @@ contains
                 Zaux=1.0_db
                 do i=1,j
                    Zaux=Zaux+H(i,j)*A(i)
-                   !write(*,*) i,j,Z
                 enddo
                 logZetaaux=logZetaaux+log(Zaux)
                 Zaux=1.0_db/Zaux
@@ -347,7 +354,7 @@ contains
                    Mij(k,l)=Mij(k,l)+D(i)
                 enddo
 
-!CREO QUE LO DE ABAJO ESTA MAL, COMPROBAR...
+!CREO QUE LO DE ABAJO ESTA MAL, COMPROBAR... (o está bien pero calcula la media de las sigmas y no <prod m sigma>)
 
 
                 do i=1,j
@@ -384,12 +391,55 @@ contains
     endif
 
 
+    if(wProd_ms) then
+      do p=1,ST_length
+         s=S_interval(p)
+         t=T_interval(p)
+         F=0._db
+         A=0._db
+         A(1)=1.0_db
+
+         do j=1,leng
+            Z=1.0
+            do i=1,j
+               Z=Z+H(i,j)*A(i)
+            enddo
+            logZeta=logZeta+log(Z)
+            Z=1.0_db/Z
+     
+            do i=1,j
+               A(i)=Z*H(i,j)*A(i)
+            enddo
+            A(j+1)=Z
+
+            do i=1,j !this should be optimizable distinguishing between cases where sigma_ij-sigma_i,j-1 are zero, but I don't know if it's the same condition as before: s > i .and. t == j
+               if (j /= 1) then
+                  F(i)=Z*H(i,j)*F(i)+&
+                                    &F(i)*(sigma_st_ab_matrix(p,i,j)-sigma_st_ab_matrix(p,i,j-1)) 
+               else
+                  F(i)=Z*H(i,j)*F(i)
+               endif   
+            end do
+            F(j+1)=Z*sigma_st(p)
+
+            sigma_st(p)=0.0_db
+            do i=1,j+1
+               sigma_st(p)=sigma_st(p)+F(i)
+            enddo
+
+            sigma_st(p)=sigma_st(p)/(t-s+1) !normalization
+
+         end do !j    
+      end do !p      
+    end if
+
 
     EonRT=X
     ConR=Y-X**2 + X2
     ConRfixed=X2
     M=M/leng 
     sigma=sigma/leng
+    
 
     return
 

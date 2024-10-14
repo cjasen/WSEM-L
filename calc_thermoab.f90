@@ -278,7 +278,7 @@ module thermoab
             
             end do ! j
 
-         end do ! k in ST_length
+         end do ! p in ST_length
       end if
 
       !   magnetization of residue k per island -> sigma_k(a,b). That it's <m_i*s_i>^(a,b) 
