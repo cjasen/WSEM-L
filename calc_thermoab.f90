@@ -242,7 +242,7 @@ module thermoab
 
       enddo ! j=1,leng
 
-      if (wProd_ms) then
+      if (wProd_ms) then ! <prod_k=s^t m_k  sigma_k>
          do p=1,ST_length
             s=S_interval(p)
             t=T_interval(p)
@@ -250,7 +250,7 @@ module thermoab
             A=0._db
             A(1)=1.0_db
 
-            ! This section is quite inefficient because we do the same calculations in the previous and in the next section. The whole section makes the program like 1s slower per temperature
+            ! This section is quite inefficient because we do the same calculations in the previous and in the next section.
             do j=1,leng
                Zaux=1.0_db
                do i=1,j
@@ -263,13 +263,13 @@ module thermoab
                A(j+1)=Zaux  
             
                do i=1,j 
-                  if (s > (i+offset) .and. t == (j+offset)) then ! <prod m sigma>^(ab) = O(s-i)*d_tj where O is the Heavyside function and d the Kroneker's delta
-                     E(i)=Z*H(i,j)*E(i)+A(i)
+                  if (s >= (i+offset) .and. t == (j+offset)) then ! <prod m sigma>^(ab) = O(s-i)*d_tj where O is the Heavyside function and d the Kroneker's delta
+                     E(i)=Zaux*H(i,j)*E(i)+A(i)
                   else
-                     E(i)=Z*H(i,j)*E(i)
+                     E(i)=Zaux*H(i,j)*E(i)
                   end if
                end do
-               E(j+1)=Z*sigma_st_ab(p)
+               E(j+1)=Zaux*sigma_st_ab(p)
 
                sigma_st_ab(p)=0.0_db
                do i=1,j+1
@@ -280,6 +280,7 @@ module thermoab
 
          end do ! p in ST_length
       end if
+
 
       !   magnetization of residue k per island -> sigma_k(a,b). That it's <m_i*s_i>^(a,b) 
 

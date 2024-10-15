@@ -4,11 +4,13 @@
 -5.6489615337039424E-002  -1.2805882477460026E-002   29.0 0.05 -3.3715274353375259E-004 1.7058695090775599E-003   4.3716186617863747E-003  as in Naganathan 2012 energy of a contact eps  (KJ/mol),entropy of one residue q (KJ/K/mol), eps_eff, Isolv(M), deltaCp(KJ mol-1 K-1), a(KJ/molK), b(KJ/molK2)
 330.,430.,2.,385 !280,380,0.05,385
 0,0,1 !(en nuestro caso, 0,0,1 ; el valor diferente de 1 sirve para salir del bucle) 
-2	! the first number is the number of (S,T) intervals you want to calculate <prod_k=S^T m_k sigma_k>. Then it follows the values of S, and then those for T	
-16
-64
+3	! the first number is the number of (S,T) intervals you want to calculate <prod_k=S^T m_k sigma_k>. Then it follows the values of S, and then those for T	
+30
 32
-98 	!! it ends here. If I put it all in the same line I have errors (thx Fortran!)
+74
+84
+46
+88	!! it ends here. If I put it all in the same line I have errors (thx Fortran!)
 rCalpha.txt
 1DPX.map
 1DPX_elec.map

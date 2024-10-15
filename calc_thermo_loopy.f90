@@ -271,9 +271,7 @@ contains
              Zaux=1.0_db
              do i=1,j
                 Zaux=Zaux+H(i,j)*A(i)
-                !write(*,*) i,j,Z
              enddo
-             logZetaaux=logZetaaux+log(Zaux)
              Zaux=1.0_db/Zaux
 
              do i=1,j
@@ -331,7 +329,6 @@ contains
                 do i=1,j
                    Zaux=Zaux+H(i,j)*A(i)
                 enddo
-                logZetaaux=logZetaaux+log(Zaux)
                 Zaux=1.0_db/Zaux
 
                 do i=1,j
@@ -360,8 +357,6 @@ contains
                 do i=1,j
                    if (k .le. i .and. j .le. l ) then                
                       E(i)=Zaux*H(i,j)*E(i)+A(i)*(sigmaab(i,j)-sigmaab(i,j-1))
-
-
                    else
                       E(i)=Zaux*H(i,j)*E(i)
                    endif
@@ -379,7 +374,6 @@ contains
        enddo
 
 
-
        do k = 1, leng
           do l = k, leng
              sigmaij(k, l) = sigmaij(k, l) / (l - k + 1)
@@ -390,8 +384,7 @@ contains
 
     endif
 
-
-    if(wProd_ms) then
+    if(wProd_ms) then ! <prod_k=s^t m_k sigma_k>
       do p=1,ST_length
          s=S_interval(p)
          t=T_interval(p)
@@ -404,7 +397,6 @@ contains
             do i=1,j
                Z=Z+H(i,j)*A(i)
             enddo
-            logZeta=logZeta+log(Z)
             Z=1.0_db/Z
      
             do i=1,j
@@ -412,10 +404,10 @@ contains
             enddo
             A(j+1)=Z
 
-            do i=1,j !this should be optimizable distinguishing between cases where sigma_ij-sigma_i,j-1 are zero, but I don't know if it's the same condition as before: s > i .and. t == j
-               if (j /= 1) then
+            do i=1,j 
+               if (j/=1) then ! "j+1" bc it may be the case Sij=0 but Si,j-1 != 0, and we want to take this into account
                   F(i)=Z*H(i,j)*F(i)+&
-                                    &F(i)*(sigma_st_ab_matrix(p,i,j)-sigma_st_ab_matrix(p,i,j-1)) 
+                                     &A(i)*(sigma_st_ab_matrix(p,i,j)-sigma_st_ab_matrix(p,i,j-1)) 
                else
                   F(i)=Z*H(i,j)*F(i)
                endif   
