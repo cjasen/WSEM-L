@@ -283,45 +283,46 @@ module thermoab
 
 
       !   magnetization of residue k per island -> sigma_k(a,b). That it's <m_i*s_i>^(a,b) 
+      if (wMave .or. wMres .or. wMisland) then
+         sigmai=0.0_db
+         do k=1,N !PIER: changed leng ->N . This was an error! 5/9/24
+            D=0.0_db
+            A=0.0_db
+            A(1)=1.0_db
+            do j=1,leng
 
-      sigmai=0.0_db
-      do k=1,N !PIER: changed leng ->N . This was an error! 5/9/24
-         D=0.0_db
-         A=0.0_db
-         A(1)=1.0_db
-         do j=1,leng
+               Zaux=1.0_db
+               do i=1,j
+                  Zaux=Zaux+H(i,j)*A(i)
+                  !write(*,*) i,j,Z
+               enddo
 
-            Zaux=1.0_db
-            do i=1,j
-               Zaux=Zaux+H(i,j)*A(i)
-               !write(*,*) i,j,Z
+               Zaux=1.0_db/Zaux
+
+               do i=1,j
+                  A(i)=Zaux*H(i,j)*A(i)
+               enddo
+               A(j+1)=Zaux  
+
+
+               do i=1,j
+                  if ((j+offset) .eq. k) then
+                     D(i)=Zaux*H(i,j)*D(i)+A(i)
+                  else
+                     D(i)=Zaux*H(i,j)*D(i)
+                  endif
+               enddo
+               D(j+1)=Zaux*sigmai(k)
+
+               sigmai(k)=0.0_db 
+               do i=1,j+1
+                  sigmai(k)=sigmai(k)+D(i) 
+               enddo
+
             enddo
-
-            Zaux=1.0_db/Zaux
-
-            do i=1,j
-               A(i)=Zaux*H(i,j)*A(i)
-            enddo
-            A(j+1)=Zaux  
-
-
-            do i=1,j
-               if ((j+offset) .eq. k) then
-                  D(i)=Zaux*H(i,j)*D(i)+A(i)
-               else
-                  D(i)=Zaux*H(i,j)*D(i)
-               endif
-            enddo
-            D(j+1)=Zaux*sigmai(k)
-
-            sigmai(k)=0.0_db 
-            do i=1,j+1
-               sigmai(k)=sigmai(k)+D(i) 
-            enddo
-
          enddo
-      enddo
-
+      endif
+      
       EonRT=X
       ConR=Y-X**2 + X2
       !PIER:ADDED THIS TO OUTPUT <E^2> and Cv(fixed_m_and_sigma):

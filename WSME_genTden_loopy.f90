@@ -35,8 +35,6 @@ program WSME_genTden_loopy
   integer:: aaux,baux !variables to go through islands								 
   !  real(kind=db):: nu(1:N,1:N)
 
-  logical,parameter :: onlyC=.false.
-
   integer, allocatable :: SS_matrix(:,:) ! matrix with the disulfide bonds
   integer :: num_rows, num_cols ! auxiliar variables to build the matrix
 
@@ -66,6 +64,8 @@ program WSME_genTden_loopy
      wfoldfr=.false.
      wFprof=.false.
      wMave=.false.
+     wMres=.false.
+     wMisland=.false.
      wmprof=.false.
      wstr=.false.
      wProd_ms=.false.
@@ -318,6 +318,7 @@ subroutine read_init(& !we call this routine at the very start of the main
   !  wFprof  ! =.true., .false. triggers the calculation of the free energy profiles 
   !  wmprof  ! =.true., .false. triggers the calculation of the profile for folding probability of any residue <m_i>_M 
   !  wProd_ms                   triggers the calculation of <prod_k=S^T m_k sigma_k>
+  !  onlyC   ! =.true., .false. changes all flags to only calculate the specific heat
   read(*,*) Mw
   read(*,*) (parv(i),i=1,nparmax)
   read(*,*) Tmin,Tmax,deltaT,T_ref
@@ -342,7 +343,8 @@ subroutine read_init(& !we call this routine at the very start of the main
   read(*,*) wMres
   read(*,*) wMisland
   read(*,*) wProd_ms
-  !read(*,*) wProd_ms
+  read(*,*) onlyC
+  read(*,*) SS_flag
   !     wstr=.true. -> calculate native strings, else skip
 
   pdb_code = cmapfile(1:4) !.map file is in format PDB.map, for example 1DPX.map. PDB has always 4 characters. Also, pdb_code is defined in moudle protdep_par
@@ -377,6 +379,8 @@ subroutine read_init(& !we call this routine at the very start of the main
   write(*,*) "solvmap: ",solvmapfile
   write (*,*) "Caso: ",MapasContacto
   write(*,*) "wEave,wC,wMave,wfoldfr,wstr,wFprof,wmprof,wMres,wMisland",wEave,wC,wMave,wfoldfr,wstr,wFprof,wmprof,wMres,wMisland
+  write(*,*) "onlyC=",onlyC
+  write(*,*) "Use disulfide bridges in the model: ",SS_flag
   write(*,*) '************************************************************************************'
 
   nct=0 !nº contactos ct

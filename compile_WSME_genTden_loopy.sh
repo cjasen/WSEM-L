@@ -33,4 +33,4 @@ mv *.mod Modules/
 
 rm *.o
 
-rm *.ent
+#rm *.ent

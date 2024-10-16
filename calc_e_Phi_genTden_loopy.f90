@@ -100,9 +100,11 @@ contains
     enddo
 
     !Disulfide bridge. As a covalent link, we overwrite the h_ij of two bridged residues with a very high value
-    do i=1,size(SS_matrix,1)
-         !e(1,SS_matrix(i,1),SS_matrix(i,2)) = 100000.0_db
-    end do
+    if (SS_flag) then
+      do i=1,size(SS_matrix,1)
+            e(1,SS_matrix(i,1),SS_matrix(i,2)) = -20.0_db ! Without bridge, the orgiginal value is -0.5
+      end do
+    endif 
 
     !Cálculo de las Phis
     Phi(1)=aonR*((T-T0C)/T-log(T/T0C))+ bonR*((T0C**2-T**2)/(2*T)+T0C*log(T/T0C)) !Free energy

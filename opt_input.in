@@ -1,5 +1,7 @@
 128  !n of residues
 1711 !number of electrostatic contacts
+20   !number of experimental datapoints
+3    !flag to indicate which parameters we have to optimize: 5 := eps,s,dC,a,b and 3 := eps,s,dC
 14400.0 !protein mass (g/mol)
 -5.6489615337039424E-002  -1.2805882477460026E-002   29.0 0.05 -3.3715274353375259E-004 1.7058695090775599E-003   4.3716186617863747E-003  as in Naganathan 2012 energy of a contact eps  (KJ/mol),entropy of one residue q (KJ/K/mol), eps_eff, Isolv(M), deltaCp(KJ mol-1 K-1), a(KJ/molK), b(KJ/molK2)
 330.,410.,2.,385 !280,380,0.05,385
@@ -26,8 +28,6 @@ ct
 .true. !triggers the calculation of the profile for folding probability of any residue: <m_i> and <m_i sigma_i>    (LOOPY)
 .true. !triggers the calculation of the profile for folding probability of any island: <m_ij> and <m_ij sigma_ij> (LOOPY)
 .true. !triggers the calculation of <prod_k=S^T m_k sigma_k>
-.true. !if .true., changes all flags to calculate only the specific heat (used while doing optimization)
-.false.!if .true., the model will use disulfide bridges e(1,SS_matrix(i,1),SS_matrix(i,2)) = -20.0_db
 
 !# -5.277619550888619895E-002  -1.1702637599459028363E-002   29.000000000000000     5.0000000000000003E-002   -2.20443379598194317E-004   1.5699999999999999E-003   5.5474801233316932E-003
 1# 10,10.2,0.05,385 !286,380,0.05,385
