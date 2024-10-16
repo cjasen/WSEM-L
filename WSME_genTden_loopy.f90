@@ -247,7 +247,7 @@ program WSME_genTden_loopy
            aux=aux+sigmai(i)
         enddo
 
-        write(*,*) 'T, Cp, <m>, <s>:', T, R*ConR, Mavg, aux/N ! the magnetizations are the average of the whole system, not just of one residue or island
+       if(show_cmd_output) write(*,*) 'T, Cp, <m>, <s>:', T, R*ConR, Mavg, aux/N ! the magnetizations are the average of the whole system, not just of one residue or island
 
         T=T+deltaT
      enddo
@@ -263,7 +263,7 @@ program WSME_genTden_loopy
   close(60)
 
 
-  write(*,*) '***** THE END *****'
+if(show_cmd_output)  write(*,*) '***** THE END *****'
 
 end program WSME_genTden_loopy
 
@@ -345,11 +345,12 @@ subroutine read_init(& !we call this routine at the very start of the main
   read(*,*) wProd_ms
   read(*,*) onlyC
   read(*,*) SS_flag
+  read(*,*) show_cmd_output
   !     wstr=.true. -> calculate native strings, else skip
 
   pdb_code = cmapfile(1:4) !.map file is in format PDB.map, for example 1DPX.map. PDB has always 4 characters. Also, pdb_code is defined in moudle protdep_par
 
-
+if (show_cmd_output) then
   write(*,*) '************************************************************************************'
   write(*,*) "INPUT:"
   write(*,*) "PDB:", pdb_code
@@ -382,7 +383,7 @@ subroutine read_init(& !we call this routine at the very start of the main
   write(*,*) "onlyC=",onlyC
   write(*,*) "Use disulfide bridges in the model: ",SS_flag
   write(*,*) '************************************************************************************'
-
+endif
   nct=0 !nº contactos ct
   !VdW contact map
   delta = 0._db

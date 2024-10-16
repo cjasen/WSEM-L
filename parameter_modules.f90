@@ -35,7 +35,7 @@ end module phys_const
    integer, allocatable :: S_interval(:), T_interval(:) ! intervals to calculate <prod_k=S^T m_k sigma_k>
    real(kind=db) :: cdenmin, cdenmax,deltacden
    logical :: wEave,wC,wMave,wfoldfr,wstr,wFprof,wmprof, wMres, wMisland, wProd_ms
-   logical :: onlyC, SS_flag
+   logical :: onlyC, SS_flag, show_cmd_output
    ! wEave= calculates the average energy; wC: calculate specific heat, wMave=calculate average "magnetization", wfoldfr: with fraction folded; wst=with strings, wFprof=with F profiles, wmprof=with m profiles
    ! character(len=80):: outtherm,outprof,outstring,outmprofile
    ! real(kind=db):: parv(nparmax)

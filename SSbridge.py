@@ -1,11 +1,23 @@
 import sys
 import numpy as np
 from Bio import PDB
+import os
+import contextlib
+
+@contextlib.contextmanager
+def suppress_output():
+    with open(os.devnull, "w") as devnull:
+        old_stdout = sys.stdout
+        sys.stdout = devnull
+        try:
+            yield
+        finally:
+            sys.stdout = old_stdout
 
 def get_disulfide_bonds(pdb_code):
     # Download the PDB file from the PDB database
     pdb_list = PDB.PDBList()
-    pdb_file = pdb_list.retrieve_pdb_file(pdb_code, pdir='.', file_format='pdb')
+    with suppress_output(): pdb_file = pdb_list.retrieve_pdb_file(pdb_code, pdir='.', file_format='pdb')
     
     # Parse the PDB file
     parser = PDB.PDBParser(QUIET=True)
