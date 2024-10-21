@@ -1,5 +1,5 @@
 
- program WSME_genTden
+ program WSME_loopy_optimizable
  !using the hamoltonian:
  !     H=- T  \sum_i q + eps*ASAunfoprotsa + sum_{i<=j} (-eps Delta_ij x_{i,j}) +\sum_i (T q+alfa c) x_{i,i})
  ! where Delta_ij represent the contribution of contact ij to the DeltaASA(U-N).
@@ -9,7 +9,7 @@
    use globalpar
    use phys_const
    include 'nlopt.f'
-!   include '/usr/local/include/nlopt.f'
+!  include '/usr/local/include/nlopt.f'
    
    external dist
    real (kind=db)::parv(nparmax),y(nparmax) !vector of npar parameters on which the energy depends (i.e. q, eps, ...)
@@ -25,8 +25,8 @@
    REAL time_begin, time_end, tol1
    
    
-   logical,parameter :: onlyC=.true. 
-     !if only the specific heat is requested, the input flags are redefined accordingly:
+   logical,parameter :: onlyC=.true.
+   !if only the specific heat is requested, the input flags are redefined accordingly:
    if(onlyC) then
       wEave=.false.
       wC=.true.
@@ -35,7 +35,7 @@
       wMave=.false.
       wmprof=.false.
       wstr=.false.
-     endif  
+   endif  
    
    read (*,*) N !nº residuos
    read (*,*) N1 !nº contactos eléctricos
@@ -48,13 +48,11 @@
    allocate(e(4,N,N),F(0:N),S(0:N+1,0:N+1),m(0:N+1,0:N+1),nu(1:N,1:N))
 
    call read_init(parv)
-open(20,file='HEWL_min_ct15.dat')
+   open(20,file='HEWL_min_ct15.dat')
    eps=parv(1)
    ds=parv(2)
    dC=parv(5)
    l=0
-       
-
          parv(1)=eps
          parv(2)=ds
          parv(5)=dC
@@ -65,7 +63,6 @@ open(20,file='HEWL_min_ct15.dat')
             grad = 0._db
             maxeval = 1000 !nº evaluaciones permitidas
             tol1=1E-1
-            !maxeval = 1 !nº evaluaciones permitidas
             opt = 0 
             eval=0 !nº evaluaciones
 
@@ -166,13 +163,16 @@ open(20,file='HEWL_min_ct15.dat')
          l=l+1
     
      
-   !********************************
    close(20)
-   write(*,*)'************************************************************************************'
-   write(*,*) 'theend'
+   write(*,*) '***** THE END *****'
    
- end program WSME_genTden
- !***************************
+ end program WSME_loopy_optimizable
+
+ !*******************************************************
+ !*******************************************************
+ !*******************************************************
+ !*******************************************************
+ !*******************************************************
 
  subroutine dist(d,npar,params,grad,flaggrad,y)
  
@@ -389,44 +389,12 @@ open(20,file='HEWL_min_ct15.dat')
 
  end subroutine dist
 
- !*****************************
- 
- !******************************
+ !************************************************************
+ !************************************************************
+ !************************************************************
+ !************************************************************
+ !************************************************************
 
- !subroutine calc_thermo(&
- 
-    ! I:
-  !    & e,&
-      ! O:
-  !    & logZeta,EonRT,ConR,Mavg,fracfold)
-  !    use defreal
-  !    use phys_const
-  !    use globalpar
-  !    use protdep_par
-      ! NB: WORKING WITH RESIDUES INSTEAD OF PEPTIDE BONDS 
-      
-  !    implicit none
-  !    real(kind=db),intent(in):: e(4,N,N)
-  !    real(kind=db),intent(out):: logZeta,EonRT,ConR,Mavg,fracfold 
-  !    real(kind=db):: nu(1:N,1:N),F(0:N)
-     
-  !    logical,parameter :: withmprof=.false.
-     
-  !    logZeta=0.
-  !    EonRT=0.
-  !    ConR=0.
-  !    Mavg=0.
-  !    nu=0.
-  !    call dati(logZeta,EonRT,ConR,Mavg,e)
-!      write(*,*) 'logZeta,EonRT,ConR,Mavg,e',logZeta,EonRT,ConR,Mavg
-    
-  !    return
-  !   end subroutine calc_thermo
-    
- 
- !***********************************************+
- !***********************************************
- !**********************************************
  
  subroutine read_init(&
       !    O:
@@ -579,7 +547,12 @@ open(20,file='HEWL_min_ct15.dat')
  end subroutine read_init
  
  
- !************************************************
+ !***************************************************
+ !***************************************************
+ !***************************************************
+ !***************************************************
+ !***************************************************
+
  
  subroutine profiles(&
  !     I:
@@ -716,8 +689,12 @@ open(20,file='HEWL_min_ct15.dat')
    return
  end subroutine profiles
  
- 
- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ !***************************************************
+ !***************************************************
+ !***************************************************
+ !***************************************************
+ !***************************************************
+
  subroutine calc_fracfold(&
      !I:	 
     &F,&

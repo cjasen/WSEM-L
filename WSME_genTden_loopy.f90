@@ -81,6 +81,7 @@ program WSME_genTden_loopy
   open(50,file='Output/magnet.dat')
   write(50,*) "#T       Residue #i       m_i         sigma_i         m_i - sigma_i "
   open(60,file='Output/ener.dat')
+  open(94,file="Output/simCp.txt")
   if(wFprof) open(30,file='Output/Fprof.dat') !profiles
   if(wmprof) open(35,file='Output/mprofile.dat') !profiles
   if(wstr) open(40,file='Output/strings.dat') !native strings
@@ -202,7 +203,7 @@ program WSME_genTden_loopy
              &       R*T*FreeonRT,R*T*EnthonRT,R*(EnthonRT-FreeonRT),R*ConR,R*Phi(3),R*natbase(3)
         !write(20,55) T,R*ConR
         !         write(*,*) T,R*T*FreeonRT
-
+        write(94,*) R*ConR ! specific heat
         if (wFprof.or.wmprof) then
            F=0.
            nu=0.
@@ -261,6 +262,7 @@ program WSME_genTden_loopy
   close (20)
   close(50)  !PIER: added this two "close" 27/8/24
   close(60)
+  close(94)
 
 
 if(show_cmd_output)  write(*,*) '***** THE END *****'

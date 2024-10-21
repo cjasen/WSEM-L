@@ -26,9 +26,9 @@ ct
 .true. !triggers the calculation of the profile for folding probability of any residue: <m_i> and <m_i sigma_i>    (LOOPY)
 .true. !triggers the calculation of the profile for folding probability of any island: <m_ij> and <m_ij sigma_ij> (LOOPY)
 .true. !triggers the calculation of <prod_k=S^T m_k sigma_k>
-.false. !if .true., changes all flags to calculate only the specific heat (used while doing optimization)
+.true. !if .true., changes all flags to calculate only the specific heat (used while doing optimization)
 .false.!if .true., the model will use disulfide bridges e(1,SS_matrix(i,1),SS_matrix(i,2)) = -20.0_db
 .true. !if .false., removes the cmd output of WSME_genTden
 
 !# -5.277619550888619895E-002  -1.1702637599459028363E-002   29.000000000000000     5.0000000000000003E-002   -2.20443379598194317E-004   1.5699999999999999E-003   5.5474801233316932E-003
-!# 10,10.2,0.05,385 !286,380,0.05,385
+1# 10,10.2,0.05,385 !286,380,0.05,385
