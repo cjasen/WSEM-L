@@ -31,7 +31,10 @@ program WSME_genTden_loopy
   real(kind=db), allocatable ::              sigmaiaux(:)
   real(kind=db), allocatable :: sigma_st_ab_matrix(:,:,:), sigma_st_ab_aux(:), sigma_st(:)
   real(kind=db):: ConRtest,ConRfixave !PIER: checks 27/8/24
-  integer:: i,j,k,iM,l									 
+
+  real(kind=db),allocatable :: deltaT_array(:), t_exp_aux(:), c_exp_aux(:) !used while optimization
+
+  integer:: i,j,k,iM,l,q									 
   integer:: aaux,baux !variables to go through islands								 
   !  real(kind=db):: nu(1:N,1:N)
 
@@ -55,6 +58,7 @@ program WSME_genTden_loopy
        &     parv)
 
   allocate(sigma_st_ab_matrix(1:ST_length,1:N,1:N),sigma_st_ab_aux(1:ST_length),sigma_st(1:ST_length))
+  allocate(deltaT_array(1:nexp),t_exp_aux(1:nexp),c_exp_aux(1:nexp))
   
 
   !if only the specific heat is requested, the input flags are redefined accordingly:
@@ -96,12 +100,28 @@ program WSME_genTden_loopy
   baux=N
   allocate(auxe(4,aaux:baux,aaux:baux))
 
+  !This section of code if used if we want to only simulate temperatures we have experimental data for
+  if(constant_deltaT) then
+      deltaT_array=deltaT
+  else
+      open(56,file="Input/"//trim(expfile))
+      do i=1,nexp
+         read(56,*) t_exp_aux(i),c_exp_aux(i)
+      enddo
+      do i=1,nexp-1
+         deltaT_array(i)=t_exp_aux(i+1)-t_exp_aux(i)
+      enddo
+      deltaT_array(nexp)=1 !just to get out of the while bucle
+      Tmin=t_exp_aux(1)
+      Tmax=t_exp_aux(size(t_exp_aux))
+  endif 
+
 
   cden=cdenmin ! concentration of denaturant. We only use 0
   do while (cden.le.cdenmax)
-
+     q=1 
      T=Tmin
-     do while (T.le.Tmax)
+     do while (T <= Tmax)
         FreeonRT=0._db
         logZeta=0._db
         EonRT=0._db
@@ -203,7 +223,7 @@ program WSME_genTden_loopy
              &       R*T*FreeonRT,R*T*EnthonRT,R*(EnthonRT-FreeonRT),R*ConR,R*Phi(3),R*natbase(3)
         !write(20,55) T,R*ConR
         !         write(*,*) T,R*T*FreeonRT
-        write(94,*) R*ConR ! specific heat
+        write(94,*)R*ConR ! specific heat
         if (wFprof.or.wmprof) then
            F=0.
            nu=0.
@@ -250,7 +270,8 @@ program WSME_genTden_loopy
 
        if(show_cmd_output) write(*,*) 'T, Cp, <m>, <s>:', T, R*ConR, Mavg, aux/N ! the magnetizations are the average of the whole system, not just of one residue or island
 
-        T=T+deltaT
+        T=T+deltaT_array(q)
+        q=q+1
      enddo
      cden=cden+deltacden
   enddo
@@ -324,6 +345,7 @@ subroutine read_init(& !we call this routine at the very start of the main
   read(*,*) Mw
   read(*,*) (parv(i),i=1,nparmax)
   read(*,*) Tmin,Tmax,deltaT,T_ref
+  read(*,*) nexp
   read(*,*) cdenmin,cdenmax,deltacden
 
   read(*,*) ST_length
@@ -334,6 +356,7 @@ subroutine read_init(& !we call this routine at the very start of the main
   read(*,*) cmapfile       !PBI.map
   read(*,*) elecmapfile    !PBI_elec.map
   read(*,*) solvmapfile    !cmapASA_PBI_uf_HP.dat
+  read(*,*) expfile        !file with experimental data for T and Cp (only used while optimization)
   read(*,*) MapasContacto  !ct (this is a flag to use contact map instead of ASA)
   read(*,*) wEave
   read(*,*) wC
@@ -348,6 +371,7 @@ subroutine read_init(& !we call this routine at the very start of the main
   read(*,*) onlyC
   read(*,*) SS_flag
   read(*,*) show_cmd_output
+  read(*,*) constant_deltaT
   !     wstr=.true. -> calculate native strings, else skip
 
   pdb_code = cmapfile(1:4) !.map file is in format PDB.map, for example 1DPX.map. PDB has always 4 characters. Also, pdb_code is defined in moudle protdep_par
@@ -376,11 +400,11 @@ if (show_cmd_output) then
   print * 
 
   write (*,*) "rCalpha map: ",mapaCalpha
-  write (*,*) "contact map: ",cmapfile
-  write (*,*) "contact map: ",cmapfile
-  write (*,*) "elecmap: ",elecmapfile
-  write(*,*) "solvmap: ",solvmapfile
-  write (*,*) "Caso: ",MapasContacto
+  write (*,*) "Contact map: ",cmapfile
+  write (*,*) "Elecmap: ",elecmapfile
+  write(*,*) "Solvmap: ",solvmapfile
+  write(*,*) "Experimental data: ", expfile
+  write (*,*) "Case for map using: ",MapasContacto
   write(*,*) "wEave,wC,wMave,wfoldfr,wstr,wFprof,wmprof,wMres,wMisland",wEave,wC,wMave,wfoldfr,wstr,wFprof,wmprof,wMres,wMisland
   write(*,*) "onlyC=",onlyC
   write(*,*) "Use disulfide bridges in the model: ",SS_flag
