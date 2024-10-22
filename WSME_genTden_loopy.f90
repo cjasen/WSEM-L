@@ -58,7 +58,7 @@ program WSME_genTden_loopy
        &     parv)
 
   allocate(sigma_st_ab_matrix(1:ST_length,1:N,1:N),sigma_st_ab_aux(1:ST_length),sigma_st(1:ST_length))
-  allocate(deltaT_array(1:nexp),t_exp_aux(1:nexp),c_exp_aux(1:nexp))
+  allocate(t_exp_aux(1:nexp),c_exp_aux(1:nexp))
   
 
   !if only the specific heat is requested, the input flags are redefined accordingly:
@@ -102,8 +102,10 @@ program WSME_genTden_loopy
 
   !This section of code if used if we want to only simulate temperatures we have experimental data for
   if(constant_deltaT) then
+   allocate(deltaT_array(1:1000))
       deltaT_array=deltaT
   else
+      allocate(deltaT_array(1:nexp))
       open(56,file="Input/"//trim(expfile))
       do i=1,nexp
          read(56,*) t_exp_aux(i),c_exp_aux(i)
@@ -323,25 +325,6 @@ subroutine read_init(& !we call this routine at the very start of the main
   prefac_kappa = 0.5*(log(2.)+log(Navo)+2*log(qe)-27*log(10.)-log(vac_eps0)-log(kB))
   prefac_kappa = exp(prefac_kappa)
   
-
-  !  input file format:
-  !  N  !n of residues
-  !  N1 !number of electrostatic contacts
-  !  Mw !protein mass
-  !  csi DeltaS eps_eff I DeltaC a b  !as in Naganathan 2012
-  !  concdenamin, concdenatmax, deltaconcdenat !(en nuestro caso, 0,0,1 ; el valor diferente de 1 sirve para salir del bucle)
-  !  Tmin, Tmax, deltaT 
-  !  n, x1, x2... y1, y2... the first number is the number of (S,T) intervals you want to calculate <prod_k=S^T m_k sigma_k>. Then it follows the values of S, and then those for T
-  !  cmapfile
-  !  wEave   ! =.true., .false. triggers the calculation of the average energy
-  !  wC      ! =.true., .false. triggers the calculation of the specific heat
-  !  wMave   ! =.true., .false. triggers the calculation of the average native fraction
-  !  wfoldfr ! =.true., .false. triggers the calculation of the folded fraction (Zf/Z, folding constant)
-  !  wstr    ! =.true., .false. triggers the calculation of the native strings
-  !  wFprof  ! =.true., .false. triggers the calculation of the free energy profiles 
-  !  wmprof  ! =.true., .false. triggers the calculation of the profile for folding probability of any residue <m_i>_M 
-  !  wProd_ms                   triggers the calculation of <prod_k=S^T m_k sigma_k>
-  !  onlyC   ! =.true., .false. changes all flags to only calculate the specific heat
   read(*,*) Mw
   read(*,*) (parv(i),i=1,nparmax)
   read(*,*) Tmin,Tmax,deltaT,T_ref

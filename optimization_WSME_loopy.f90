@@ -1,16 +1,16 @@
 program optimization_WSME_loopy
     use defreal
+    use opt_aux
     include 'nlopt.f'
     external dist
-    real (kind=db)::parv(7),y(7)
+    real (kind=db)::parv(7)
     double precision d, params3(3), grad3(3),params5(5),grad5(5),minf_opt,eps,ds,dC,a,b !I don't use grad3 or grad5 for anything
     !double precision eps_i,ds_i,dC_i
     integer :: npar, flaggrad, ires, maxeval
     integer*8 opt,l
     REAL time_begin, time_end, tol1
-    integer :: nexp, flagpar, eval !nexp is the number of experimental points, flagpar a flag to indicate if optimice 3 parameters or 5 (+a and b)
-    real(kind=db), allocatable :: T_exp(:),C_exp(:) !an array to carry the experimental datapoints
-    character(len=80):: expfile, simfile !the name of the .txt with the experimental datapoints and name of the .txt with the simulated data
+    integer :: flagpar !nexp is the number of experimental points, flagpar a flag to indicate if optimice 3 parameters or 5 (+a and b)
+
 
     read(*,*) nexp
     read(*,*) flagpar
@@ -37,7 +37,7 @@ program optimization_WSME_loopy
     maxeval = 1000 !nº máximo de iteraciones permitidas
     tol1=1E-1
     opt = 0 
-    eval=0
+    eval=1
     CALL CPU_TIME ( time_begin ) 
 
     selectcase(flagpar)
@@ -55,13 +55,15 @@ program optimization_WSME_loopy
         
         write(*,*) 'Optimizando eps,s,dC' 
 
-        call dist(d,nexp,t_exp,C_exp,simfile,npar,params3,y,eval) !calcula distancia entre curva experimental y teorica
+        call dist(d,npar,params3) !calcula distancia entre curva experimental y teorica
         write(*,*)  'd_min, dolddef iniciales = ',d,d*sqrt(real(nexp)-1)/real(nexp) 
+        write(*,*) "******************************"
+        write(*,*) ""
             
         call nlo_create(opt, NLOPT_LN_NELDERMEAD, npar)
         call nlo_set_min_objective(ires, opt, dist, y)
-        !call nlo_set_xtol_abs1(ires, opt, tol1)
-        !call nlo_get_ftol_abs(tol1, opt)
+        call nlo_set_xtol_abs1(ires, opt, tol1)
+        call nlo_get_ftol_abs(tol1, opt)
         call nlo_set_maxeval(ires, opt, maxeval)
         call nlo_get_maxeval(maxeval, opt)
         call nlo_optimize(ires, opt, params3, minf_opt)
@@ -80,6 +82,8 @@ program optimization_WSME_loopy
         call nlo_destroy(opt)
 
     case(5)
+        write(*,*) 'Optimizando eps,s,dC,a,b' 
+
         npar = 5 !nº parámetros a optimizar
         params5(1) = parv(1) !epsilon
         params5(2) = parv(2) !s
@@ -91,13 +95,13 @@ program optimization_WSME_loopy
         y(1)=parv(3) !epsilon_eff
         y(2)=parv(4) !I_solv
 
-        call dist(d,nexp,T_exp,C_exp,simfile,npar,params5,y,eval) !calcula distancia entre curva experimental y teorica
+        call dist(d,npar,params5) !calcula distancia entre curva experimental y teorica
         write(*,*) 'd_min, dolddef iniciales = ',d,d*sqrt(real(nexp)-1)/real(nexp) 
 
         call nlo_create(opt, NLOPT_LN_NELDERMEAD, npar)
         call nlo_set_min_objective(ires, opt, dist, y)
-        call nlo_set_maxeval(ires, opt, maxeval)
-        call nlo_get_maxeval(maxeval, opt)
+        !call nlo_set_maxeval(ires, opt, maxeval)
+        !call nlo_get_maxeval(maxeval, opt)
         call nlo_optimize(ires, opt, params5, minf_opt)
 
         if (ires.lt.0) then
@@ -128,20 +132,19 @@ close(20)
 
 end program optimization_WSME_loopy
 
-subroutine dist(d,nexp,T_exp, C_exp,simfile,npar,params,y,eval)
-    use  defreal
+subroutine dist(d,npar,params)
+    use defreal
+    use opt_aux
     implicit none
 
+    integer :: npar, p, i
     double precision :: d, params(npar)
-    integer :: nexp, npar, p, eval, i
-    real (kind=db)::parv(7),y(7)
-    real (kind=db):: T_exp(nexp), C_exp(nexp)
+    real (kind=db)::parv(7)
     real (kind=db):: T_sim(nexp), C_sim(nexp) !simulated data that WSME_genTden_loopy generates
-    character(len=80) :: simfile
-
 
     if(npar==3) then
         parv(1) = params(1) !eps
+
         parv(2) = params(2) !s
         parv(3)= y(1) !epsilon_eff
         parv(4) = y(2) !I_solv
@@ -163,11 +166,12 @@ subroutine dist(d,nexp,T_exp, C_exp,simfile,npar,params,y,eval)
     !Generate input file for WSME_genTden_loopy
     open(22,file="Input/opt_input_WSME.in")
 
+
     write(22,*) 128
     write(22,*) 1711
     write(22,*) 14400.0
     write(22,*) (parv(i), i=1,7)
-    write(22,*) T_exp(1),",",T_exp(nexp),",",2,",",385 !2 is a random number, it is not used bc we don't use a constant deltaT. 385 is Tref
+    write(22,*) t_exp(1),",",t_exp(nexp),",",2,",",385 !2 is a random number, it is not used bc we don't use a constant deltaT. 385 is Tref
     write(22,*) nexp
     write(22,*) "0,0,1"
     write(22,*) 1 !number of (s,t) intervals
@@ -191,7 +195,7 @@ subroutine dist(d,nexp,T_exp, C_exp,simfile,npar,params,y,eval)
     write(22,*) ".false."
     write(22,*) ".true." !onlyCp
     write(22,*) ".false."
-    write(22,*) ".true." !if .false. removes output from WSME_genTden in CMD
+    write(22,*) ".false." !if .false. removes output from WSME_genTden in CMD
     write(22,*) ".false." !if .false. WSME doesn't use a constant deltaT, it reads the experimental temperatures
 
 
@@ -205,9 +209,14 @@ subroutine dist(d,nexp,T_exp, C_exp,simfile,npar,params,y,eval)
         d=d+ABS(C_sim(p) - C_exp(p))*ABS(C_sim(p) - C_exp(p))
     end do 
 
-    write(*,*) "Iteration number ",eval, " with distance ",d
+    write(*,*) "Iteration: ",eval, " || d= ",d*sqrt(real(nexp)-1)/real(nexp) 
     eval=eval+1
     
+    if(MOD(eval, 100) == 0) then
+        open(65,file="Output/backsafe_param.txt")
+        write(65,*) (parv(i), i=1,7)
+    endif
+
     close(22)
     close(94)
 end subroutine

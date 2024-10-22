@@ -2,4 +2,4 @@
 3   				!flag to indicate which parameters we have to optimize: 5 := eps,s,dC,a,b and 3 := eps,s,dC
 1DPX_expCp.txt			!file with experimental datapoints for specific heat
 simCp.txt			!file with simulated datapoints for specific heat
--5.6489615337039424E-002 -1.2805882477460026E-002 29.0	0.05 -3.3715274353375259E-004 1.7058695090775599E-003 4.3716186617863747E-003 	!parameters
+-8.812E-002  -2.412E-002   29.0 0.05 -4.671E-004 1.575E-003   5.541E-003 	!chi  dS    eps_eff  Isolv  dC  a  b

@@ -45,6 +45,21 @@ end module phys_const
 
 !********************************************
 
+ module opt_aux
+  use defreal
+  implicit none
+  save
+
+  integer:: nexp, eval
+  real(kind=db), allocatable :: T_exp(:),C_exp(:) !an array to carry the experimental datapoints
+  real(kind=db):: y(7)
+  character(len=80):: expfile, simfile !the name of the .txt with the experimental datapoints and name of the .txt with the simulated data
+
+end module opt_aux
+
+!*******************************************
+
+
 module protdep_par
   use defreal
   implicit none

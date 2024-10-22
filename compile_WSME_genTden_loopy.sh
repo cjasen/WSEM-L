@@ -29,7 +29,7 @@ gfortran $WARNINGS $OPTS -c WSME_genTden_loopy.f90
 
 gfortran -o $EXE parameter_modules.o calc_e_Phi_genTden_loopy.o calc_thermoab.o calc_thermo_loopy.o  stringhe.o disulfide_module.o WSME_genTden_loopy.o ${LIB};
 
-mv *.mod Modules/
+#mv *.mod Modules/
 
 rm *.o
 

@@ -18,6 +18,6 @@ gfortran $WARNINGS $OPTS -c optimization_WSME_loopy.f90
 
 gfortran -o $EXE parameter_modules.o optimization_WSME_loopy.o ${LIB} -L"C:/Users/cjase/gcc/nlopt/lib" -lnlopt
 
-#mv *.mod Modules/
+mv *.mod Modules/
 
 rm *.o
