@@ -14,7 +14,7 @@ module thermoab
                                 ! I:
            & a_start,leng,econtrib,& ! econtrib is auxe which is also e, the matrix with the ~h_ij calculated in calc_e_Phi
                                 ! O:
-           & logZeta,EonRT,EonRTsquared,ConR_fixedconf,ConR,sigma,sigmai,fracfold,sigma_st_ab)
+           & logZeta,EonRT,EonRTsquared,ConR_fixedconf,ConR,sigma,sigmai,fracfold,sigma_st_ab,sigma_st_ab_all)
         !     use defreal
         !     use phys_const
         !     use globalpar , only : wfoldfr
@@ -25,7 +25,7 @@ module thermoab
         integer,intent(in) :: a_start,leng ! for region (a->b), a_start=a, leng=b-a+1
 
         real(kind=db),intent(in):: econtrib(:,:,:) !econtrib(4,leng,leng)
-        real(kind=db),intent(out):: logZeta,EonRT,ConR,sigma,sigmai(1:N),fracfold,sigma_st_ab(1:ST_length)
+        real(kind=db),intent(out):: logZeta,EonRT,ConR,sigma,sigmai(1:N),fracfold,sigma_st_ab(1:ST_length),sigma_st_ab_all(1:N,1:N)
         real(kind=db),intent(out):: EonRTsquared,ConR_fixedconf    !PIER: added this, also in the argument 27/08/24
         real(kind=db):: nu(1:leng,1:leng),F(0:leng)
 
@@ -36,8 +36,9 @@ module thermoab
         ConR=0._db
         sigma=0._db
         sigma_st_ab=0._db
+        sigma_st_ab_all=0._db
         nu=0._db
-        call datiab(logZeta,EonRT,EonRTsquared,ConR_fixedconf,ConR,sigma,sigmai,sigma_st_ab,econtrib,a_start,leng) !dati is the plural for data, as this calculates thermo data. Terrible name.
+        call datiab(logZeta,EonRT,EonRTsquared,ConR_fixedconf,ConR,sigma,sigmai,sigma_st_ab,sigma_st_ab_all,econtrib,a_start,leng) !dati is the plural for data, as this calculates thermo data. Terrible name.
         ! write(*,*) 'main:: structF/RT=' ,-logZeta
 
 
@@ -56,7 +57,7 @@ module thermoab
 
    subroutine datiab(&     
                                 !     O:
-         & logZeta,EonRT,EonRTsquared,ConR_fixedconf,ConR,sigma,sigmai,sigma_st_ab, &
+         & logZeta,EonRT,EonRTsquared,ConR_fixedconf,ConR,sigma,sigmai,sigma_st_ab,sigma_st_ab_all, &
                                 !     I:
          &  econtrib,a_start,leng)
       !   use defreal
@@ -67,14 +68,13 @@ module thermoab
       integer,intent(in) :: a_start,leng ! for region (a,b), a_start=a, leng=b-a+1
       real(kind=db),intent(in):: econtrib(:,:,:) !econtrib(3,leng,leng)
       real(kind=db),intent(out):: logZeta,EonRT, ConR, sigma, sigmai(1:N)
-      real(kind=db) :: sigma_st_ab(1:ST_length)
+      real(kind=db) :: sigma_st_ab(1:ST_length), sigma_st_ab_all(1:N,1:N) 
       real(kind=db),intent(out):: EonRTsquared,ConR_fixedconf    !PIER: added this, also in the argument 27/08/24
-      integer :: i,j,k,offset
+      integer :: i,j,k,offset,s,t,p
       real(kind=db):: H(leng,leng),O(leng,leng),A(leng+1),B(leng+1),C(leng+1),D(leng+1),E(leng+1),Z,X,Y,zaux
       real(kind=db):: Zeta,O2(leng,leng),B2(leng+1),X2
       real(kind=db):: aux,aux1,auxmin,auxmax,aux1min,aux1max,auxHmin,auxHmax !FOR CHECKS
       integer:: auximin,auximax,auxjmin,auxjmax !FOR CHECKS
-      integer:: s,t,p
       offset=a_start-1 !to know in which part of the whole residue chain our island starts
 
       H=0.0_db
@@ -281,6 +281,44 @@ module thermoab
          end do ! p in ST_length
       end if
 
+      !all (s,t) islands, used to calculate f(L) which is a summatory to see the lengths of the islands in the whole protein
+      if(f_L) then
+         do s=1,N
+            do t=s,N
+
+               E=0._db
+               A=0._db
+               A(1)=1.0_db
+   
+               do j=1,leng
+                  Zaux=1.0_db
+                  do i=1,j
+                     Zaux=Zaux+H(i,j)*A(i)
+                  enddo
+                  Zaux=1.0_db/Zaux
+                  do i=1,j
+                     A(i)=Zaux*H(i,j)*A(i)
+                  enddo
+                  A(j+1)=Zaux  
+               
+                  do i=1,j 
+                     if (s >= (i+offset) .and. t == (j+offset)) then ! <prod m sigma>^(ab) = O(s-i)*d_tj where O is the Heavyside function and d the Kroneker's delta
+                        E(i)=Zaux*H(i,j)*E(i)+A(i)
+                     else
+                        E(i)=Zaux*H(i,j)*E(i)
+                     end if
+                  end do
+                  E(j+1)=Zaux*sigma_st_ab_all(s,t)
+   
+                  sigma_st_ab_all(s,t)=0.0_db
+                  do i=1,j+1
+                     sigma_st_ab_all(s,t)=sigma_st_ab_all(s,t)+E(i)
+                  enddo
+               end do ! j
+
+            enddo
+         enddo
+      endif
 
       !   magnetization of residue k per island -> sigma_k(a,b). That it's <m_i*s_i>^(a,b) 
       if (wMave .or. wMres .or. wMisland) then

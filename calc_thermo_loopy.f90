@@ -10,9 +10,9 @@ module thermo
 contains
 
   subroutine calc_thermo2(& 
-       & leng,logZetaab,EonRTab,EonRTabsquared,ConRabfixed,sigmaab,sigmaiab,sigma_st_ab_matrix, & 
+       & leng,logZetaab,EonRTab,EonRTabsquared,ConRabfixed,sigmaab,sigmaiab,sigma_st_ab_matrix,sigma_st_ab_all_matrix, & 
                                 ! O:
-       & logZeta,EonRT,ConR,ConRfixed,Mavg,sigmaavg,fracfold,mi,sigmai,mij,sigmaij,sigma_st)   
+       & logZeta,EonRT,ConR,ConRfixed,Mavg,sigmaavg,fracfold,mi,sigmai,mij,sigmaij,sigma_st,sigma_st_all)   
     !     use defreal
     !     use phys_const
     !     use globalpar , only : wfoldfr
@@ -24,7 +24,7 @@ contains
 
     real(kind=db),intent(in)::logZetaab(:,:),EonRTab(:,:),EonRTabsquared(:,:),ConRabfixed(:,:),sigmaab(:,:),sigmaiab(:,:,:)
     real(kind=db),intent(out):: logZeta,EonRT,ConR,ConRfixed,Mavg,sigmaavg,fracfold,mi(:),sigmai(:),mij(:,:),sigmaij(:,:)
-    real(kind=db) :: sigma_st_ab_matrix(:,:,:),sigma_st(:) 
+    real(kind=db) :: sigma_st_ab_matrix(:,:,:),sigma_st(:), sigma_st_ab_all_matrix(:,:,:,:), sigma_st_all(:,:) 
 
     real(kind=db):: nu(1:leng,1:leng),F(0:leng)
 
@@ -40,8 +40,9 @@ contains
     Mi=0.0_db
     sigmai=0.0_db
     sigma_st=0._db
-    call dati2(logZeta,EonRT,ConR,ConRfixed,Mavg,sigmaavg,mi,sigmai,mij,sigmaij,sigma_st,&
-         leng,logZetaab,EonRTab,EonRTabsquared,ConRabfixed,sigmaab,sigmaiab,sigma_st_ab_matrix)
+    sigma_st_all=0._db
+    call dati2(logZeta,EonRT,ConR,ConRfixed,Mavg,sigmaavg,mi,sigmai,mij,sigmaij,sigma_st,sigma_st_all,&
+         leng,logZetaab,EonRTab,EonRTabsquared,ConRabfixed,sigmaab,sigmaiab,sigma_st_ab_matrix,sigma_st_ab_all_matrix)
     ! write(*,*) 'main:: structF/RT=' ,-logZeta
 
 !THE PROFILE PART BELOW WILL BE FIXED IN THE FUTURE:
@@ -61,9 +62,9 @@ contains
 
   subroutine dati2(& !PIER: changed arguments 27/8/24
                                 !     O:
-       & logZeta,EonRT,ConR,ConRfixed,M,sigma,mi,sigmai,mij,sigmaij,sigma_st, & 
+       & logZeta,EonRT,ConR,ConRfixed,M,sigma,mi,sigmai,mij,sigmaij,sigma_st, sigma_st_all, & 
                                 !     I:
-       &leng,logZetaab,EonRTab,EonRTabsquared,ConRabfixed,sigmaab,sigmaiab,sigma_st_ab_matrix)
+       &leng,logZetaab,EonRTab,EonRTabsquared,ConRabfixed,sigmaab,sigmaiab,sigma_st_ab_matrix,sigma_st_ab_all_matrix)
     !   use defreal
     !   use protdep_par, only: N
     !   use globalpar
@@ -71,8 +72,9 @@ contains
     implicit none
     integer,intent(in) :: leng ! PIER: leng =N in the relevant case
     real(kind=db),intent(in):: logZetaab(:,:),EonRTab(:,:),EonRTabsquared(:,:),ConRabfixed(:,:),sigmaab(:,:),sigmaiab(:,:,:),&
-                               &    sigma_st_ab_matrix(:,:,:) !PIER: changed this 27/8/24
-    real(kind=db),intent(out):: logZeta,EonRT, ConR,ConRfixed, M, sigma,mi(:), sigmai(:),mij(:,:),sigmaij(:,:),sigma_st(:)
+                               &    sigma_st_ab_matrix(:,:,:), sigma_st_ab_all_matrix(:,:,:,:)
+    real(kind=db),intent(out):: logZeta,EonRT, ConR,ConRfixed, M, sigma,mi(:), sigmai(:),mij(:,:),sigmaij(:,:)
+    real(kind=db),intent(out):: sigma_st(:), sigma_st_all(:,:) 
 
    !*********************************************************************************************************************************
    !sigmaab is sigmaaux or sigma, calculated in calc_thermo_ab. It has the value of <m*s>^(a->b) for each (a->b) island
@@ -83,7 +85,7 @@ contains
 
    !sigma_st_ab_matrix has, for each interval (s,t) that we define, the contribution of an (a,b) island
    !sigma_st has the probability of each (s,t) interval of all residues in state m=1,sigma=1. It is <prod_k=s^t m_k sigma_k>
-
+   !the same with the added particle _all is for doing the calculation for each (s,t) interval 
    !*********************************************************************************************************************************
 
     integer :: i,j,k,l,p,s,t
@@ -425,6 +427,48 @@ contains
       end do !p      
     end if
 
+    if(f_L) then
+         do s=1,leng
+            do t=s,leng
+
+               F=0._db
+               A=0._db
+               A(1)=1.0_db
+      
+               do j=1,leng
+                  Z=1.0
+                  do i=1,j
+                     Z=Z+H(i,j)*A(i)
+                  enddo
+                  Z=1.0_db/Z
+           
+                  do i=1,j
+                     A(i)=Z*H(i,j)*A(i)
+                  enddo
+                  A(j+1)=Z
+      
+                  do i=1,j 
+                     if (j/=1) then ! "j+1" bc it may be the case Sij=0 but Si,j-1 != 0, and we want to take this into account
+                        F(i)=Z*H(i,j)*F(i)+&
+                                           &A(i)*(sigma_st_ab_all_matrix(s,t,i,j)-sigma_st_ab_all_matrix(s,t,i,j-1)) 
+
+                     else
+                        F(i)=Z*H(i,j)*F(i)
+                     endif   
+                  end do
+                  F(j+1)=Z*sigma_st_all(s,t)
+      
+                  sigma_st_all(s,t)=0.0_db
+                  do i=1,j+1
+                     sigma_st_all(s,t)=sigma_st_all(s,t)+F(i)
+                  enddo
+                  sigma_st_all(s,t)=sigma_st_all(s,t)/(t-s+1) !normalization
+      
+               end do !j    
+
+            enddo
+         enddo
+    endif
 
     EonRT=X
     ConR=Y-X**2 + X2

@@ -1,36 +1,3 @@
-# Definir parámetros
-a <- 3.8
-A <- 20
-k_B <- 1 #1.38e-23  # Constante de Boltzmann en Joules/Kelvin
-
-# Rango de L
-L_values <- 1:120
-
-# Crear r que varía desde 3 hasta 25 a medida que L crece
-r_values <- seq(3, 25, length.out = length(L_values))
-
-# Función para calcular la entropía S'(L)
-entropy_Ooka <- function(L, r, a, A, k_B) {
-  term1 <- log(L)
-  term2 <- (r^2 - a^2) / (2 * A * a * L)
-  return(-3/2 * k_B * (term1 + term2))
-}
-
-# Calcular S'(L) para cada valor de L
-entropy_values <- sapply(1:length(L_values), function(i) {
-  L <- L_values[i]
-  r <- r_values[i]
-  entropy_Ooka(L, r, a, A, k_B)
-})
-
-# Graficar los resultados
-plot(L_values, entropy_values, type="l", col="blue", lwd=2,
-     xlab="L (Amstrongs)", ylab="Entropía S'(L)",
-     main="Simulación de la Entropía de Ooka")
-grid()
-
-#############################
-
 library(fields)
 
 # Definir parámetros

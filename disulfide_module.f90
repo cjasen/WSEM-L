@@ -11,13 +11,7 @@ module disulfide_module
         character(len=100) :: line
 
         ! Llamar al script Python con el código PDB
-        call system("python SSbridge.py " // trim(pdb_code), ios)
-
-        ! Verificar si el script Python se ejecutó correctamente
-        if (ios /= 0) then
-            print *, "Error: Python script execution failed."
-            stop
-        endif
+        !call system("python SSbridge.py " // trim(pdb_code), ios)
 
         ! Abrir el archivo CSV para contar las filas (pares de disulfuro)
         open(unit=10, file='Input/disulfide_bonds.csv', status='old', action='read', iostat=ios)

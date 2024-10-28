@@ -197,6 +197,7 @@ subroutine dist(d,npar,params)
     write(22,*) ".false."
     write(22,*) ".false." !if .false. removes output from WSME_genTden in CMD
     write(22,*) ".false." !if .false. WSME doesn't use a constant deltaT, it reads the experimental temperatures
+    write(22,*) ".false." !if .false. it won't calculate f_L
 
 
     call system('WSME_genTden_loopy.exe < Input/opt_input_WSME.in')

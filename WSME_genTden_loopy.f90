@@ -30,11 +30,13 @@ program WSME_genTden_loopy
   real(kind=db):: logZetaaux, EonRTaux, ConRaux, sigmaaux,Maux,sig,aux !auxilliar variables 		                 					 
   real(kind=db), allocatable ::              sigmaiaux(:)
   real(kind=db), allocatable :: sigma_st_ab_matrix(:,:,:), sigma_st_ab_aux(:), sigma_st(:)
+  real(kind=db), allocatable :: sigma_st_ab_all_matrix(:,:,:,:), sigma_st_ab_all_aux(:,:), sigma_st_all(:,:) !first two dimensions are all possibilities of (s,t) intervals
+  real(kind=db), allocatable :: L(:),fun_L(:) !summatory on all (s,t) islands in function of L=1:N
   real(kind=db):: ConRtest,ConRfixave !PIER: checks 27/8/24
 
   real(kind=db),allocatable :: deltaT_array(:), t_exp_aux(:), c_exp_aux(:) !used while optimization
 
-  integer:: i,j,k,iM,l,q									 
+  integer:: i,j,k,iM,l_index,q,s_index,t_index,g,aux2,aux3									 
   integer:: aaux,baux !variables to go through islands								 
   !  real(kind=db):: nu(1:N,1:N)
 
@@ -58,6 +60,8 @@ program WSME_genTden_loopy
        &     parv)
 
   allocate(sigma_st_ab_matrix(1:ST_length,1:N,1:N),sigma_st_ab_aux(1:ST_length),sigma_st(1:ST_length))
+  allocate(sigma_st_ab_all_matrix(1:N,1:N,1:N,1:N), sigma_st_ab_all_aux(1:N,1:N), sigma_st_all(1:N,1:N))
+  allocate(L(1:N),fun_L(1:N))
   allocate(t_exp_aux(1:nexp),c_exp_aux(1:nexp))
   
 
@@ -73,6 +77,7 @@ program WSME_genTden_loopy
      wmprof=.false.
      wstr=.false.
      wProd_ms=.false.
+     f_L=.false.
   endif
 
   ! Mavg(T=0K)=1:
@@ -93,9 +98,10 @@ program WSME_genTden_loopy
       open(70,file="Output/sigma_st.dat") !s t <prod_k=s^t m_k sigma_k>
       write(70,*) "#[Cden]    T   <prod_k=s^t m_k sigma_k> for all (s,t) intervals"
   end if
+  if(f_L) open(73,file="Output/f_L.txt") !f(L) = 1/(N-L+1) * sum_i^N-L+1 [ <prod_k=i^i+L-1 m_k sigma_k> ] 
   ! Disulfide bridges
   call get_disulfide_bonds_matrix(pdb_code, SS_matrix, num_rows, num_cols) ! SS_matrix: each row is a bond, the two columns have the two residues which conformates it
-
+  
   aaux=1
   baux=N
   allocate(auxe(4,aaux:baux,aaux:baux))
@@ -147,6 +153,9 @@ program WSME_genTden_loopy
         sigmaiab=0._db
         sigma_st_ab_matrix=0._db
         sigma_st=0._db
+        sigma_st_ab_all_aux=0._db
+        sigma_st_ab_all_matrix=0._db
+        sigma_st_all=0._db
         EonRTabsquared=0._db !PIER: added this and below (4 lines) 27/8/24
         ConRab_fixedconf=0._db
         EonRTabsquaredtot=0._db
@@ -155,7 +164,8 @@ program WSME_genTden_loopy
         do aaux=1,N
            do baux=aaux,N
               call calc_thermoab(aaux,baux-aaux+1,auxe,& !calculates the contributions of each (a->b) island of m=1,s=0 in a sea of m=1,s=1
-                   &  logZetaaux,EonRTaux,EonRTsquaredaux,ConR_fixedconfaux,ConRaux,sigmaaux,sigmaiaux,fracfold,sigma_st_ab_aux) !sigmaaux is <s>_(a,b). sigmai(aux) is <s_i>_ab = sum_(a,b) f^i_(a,b)*Z^(a,b) where f=1 if a in (a,b) and 0 if not
+                   &  logZetaaux,EonRTaux,EonRTsquaredaux,ConR_fixedconfaux,ConRaux,sigmaaux,sigmaiaux,fracfold,sigma_st_ab_aux,& !sigmaaux is <s>_(a,b). sigmai(aux) is <s_i>_ab = sum_(a,b) f^i_(a,b)*Z^(a,b) where f=1 if a in (a,b) and 0 if not
+                   &  sigma_st_ab_all_aux) ! <prod_k=s_t m_k sigma_k> for each (s,t) island (only a->b contribution)
                    
 !!$ !PIER: To build the pure WSME limit, without loops, comment lines below: from here...
               logZetaab(aaux,baux)=logZetaaux
@@ -169,6 +179,11 @@ program WSME_genTden_loopy
               do k=1,ST_length
                   sigma_st_ab_matrix(k,aaux,baux)=sigma_st_ab_aux(k) ! _aux is an array with ST_interval columns, and a value for one (a,b) interval for each (S,T)
               end do
+              do s_index=1,N
+               do t_index=s_index,N
+                     sigma_st_ab_all_matrix(s_index,t_index,aaux,baux)=sigma_st_ab_all_aux(s_index,t_index)
+               enddo 
+              enddo
 !!$              !...to here.
            enddo
         enddo
@@ -182,12 +197,12 @@ program WSME_genTden_loopy
          do j=1,N
                do i=1,j
                do k=i,j
-                  do l=k,j
+                  do g=k,j
                      !auxe is just e(), the matrix calculated with calc_e_Phi_genTden_loopy
-                     Hn(i,j)=Hn(i,j)+auxe(1,k,l) ! Hn(i,j)=(effective energy of the i,j native island)/RT (being 0 the completely unfolded energy as reference)
-                     Un(i,j)=Un(i,j)+auxe(2,k,l)
-                     Cvn(i,j)=Cvn(i,j)+auxe(3,k,l)
-                     if (k.eq.l) then
+                     Hn(i,j)=Hn(i,j)+auxe(1,k,g) ! Hn(i,j)=(effective energy of the i,j native island)/RT (being 0 the completely unfolded energy as reference)
+                     Un(i,j)=Un(i,j)+auxe(2,k,g)
+                     Cvn(i,j)=Cvn(i,j)+auxe(3,k,g)
+                     if (k.eq.g) then
                         Hn(i,j)=Hn(i,j)- auxe(4,k,k) !PIER: added this 27/08/2024
                      endif
                   enddo
@@ -211,8 +226,9 @@ program WSME_genTden_loopy
         !PIER: CHANGE calc_thermo:
 
         !notice calc_thermoab was in bucle of (a->b) while here the argument is just the number of residues N bc the bucle is within the subroutine
-        call calc_thermo2(N, logZetaab, EonRTabtot,EonRTabsquaredtot, ConRab_fixedconftot, sigmaab,sigmaiab,sigma_st_ab_matrix,& !calculates contribution of folded islands (m=1) on a sea of unfolded (m=0)
-             &logZeta, EonRT, ConR,ConRfixave, Mavg, sigmaavg,fracfold,Mi,sigmai,Mij,sigmaij,sigma_st)
+        call calc_thermo2(N, logZetaab, EonRTabtot,EonRTabsquaredtot, ConRab_fixedconftot, sigmaab,sigmaiab,sigma_st_ab_matrix,&
+        &      sigma_st_ab_all_matrix, logZeta, EonRT, ConR,ConRfixave, Mavg, sigmaavg,fracfold,Mi,sigmai,Mij,sigmaij,&
+               sigma_st,sigma_st_all)
 
         !RESULTS:
 
@@ -261,6 +277,19 @@ program WSME_genTden_loopy
             write(70,*) Cden, T, sigma_st ! remember sigma_st is an array with the value of <prod_k=s^t m_k sigma_k> for all (s,t) intervals
         end if
 
+        if(f_L) then
+            fun_L=0._db
+            !write(73,*) "# [Den]    T    f(1)    f(2)    f(N)"
+
+            do l_index=1,N
+               do i=1,N-l_index+1
+                  fun_L(l_index)=fun_L(l_index)+sigma_st_all(i,i+l_index-1) !f(L)~ sum_i^N-L+1 [ <prod_k=i^i+L-1 m_k sigma_k> ] where <prod_k=i^i+L-1 m_k sigma_k> is sigma_st_all(s,t). No bucle for k is needed.
+               enddo !i
+               fun_L(l_index)=fun_L(l_index)/(N-l_index+1) !normalization
+            enddo
+            write(73,*) fun_L
+        endif
+
         do i=1,N
            write(50,*) T, i, Mi(i),sigmai(i),(Mi(i)-sigmai(i)) ! magnetization for each residue
         enddo
@@ -282,6 +311,7 @@ program WSME_genTden_loopy
   if(wmprof) close (35)
   if(wstr)   close (40)
   if(wProd_ms) close(70)
+  if(f_L) close(73)
   close (20)
   close(50)  !PIER: added this two "close" 27/8/24
   close(60)
@@ -355,6 +385,7 @@ subroutine read_init(& !we call this routine at the very start of the main
   read(*,*) SS_flag
   read(*,*) show_cmd_output
   read(*,*) constant_deltaT
+  read(*,*) f_L
   !     wstr=.true. -> calculate native strings, else skip
 
   pdb_code = cmapfile(1:4) !.map file is in format PDB.map, for example 1DPX.map. PDB has always 4 characters. Also, pdb_code is defined in moudle protdep_par
@@ -391,6 +422,7 @@ if (show_cmd_output) then
   write(*,*) "wEave,wC,wMave,wfoldfr,wstr,wFprof,wmprof,wMres,wMisland",wEave,wC,wMave,wfoldfr,wstr,wFprof,wmprof,wMres,wMisland
   write(*,*) "onlyC=",onlyC
   write(*,*) "Use disulfide bridges in the model: ",SS_flag
+  write(*,*) "Calculate f(L) i.e. sumatory of all (s,t) islands: ", f_L
   write(*,*) '************************************************************************************'
 endif
   nct=0 !nº contactos ct
