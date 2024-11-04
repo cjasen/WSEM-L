@@ -24,7 +24,7 @@ module thermoab
         implicit none
         integer,intent(in) :: a_start,leng ! for region (a->b), a_start=a, leng=b-a+1
 
-        real(kind=db),intent(in):: econtrib(:,:,:) !econtrib(4,leng,leng)
+        real(kind=db),intent(in):: econtrib(:,:,:) !econtrib(4,leng,0:leng)
         real(kind=db),intent(out):: logZeta,EonRT,ConR,sigma,sigmai(1:N),fracfold,sigma_st_ab(1:ST_length),sigma_st_ab_all(1:N,1:N)
         real(kind=db),intent(out):: EonRTsquared,ConR_fixedconf    !PIER: added this, also in the argument 27/08/24
         real(kind=db):: nu(1:leng,1:leng),F(0:leng)

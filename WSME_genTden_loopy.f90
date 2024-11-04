@@ -49,7 +49,7 @@ program WSME_genTden_loopy
   allocate(delta(5,1:N,1:N)) 
   allocate(rCalpha(1:N,1:N))
   allocate(v(N1,5)) 
-  allocate(e(4,N,N),F(0:N),S(0:N+1,0:N+1),m(0:N+1,0:N+1),nu(1:N,1:N),logZetaab(1:N,1:N), EonRTab(1:N,1:N),&
+  allocate(e(4,N,0:N),F(0:N),S(0:N+1,0:N+1),m(0:N+1,0:N+1),nu(1:N,1:N),logZetaab(1:N,1:N), EonRTab(1:N,1:N),&
        & ConRab(1:N,1:N), sigmaab(1:N,1:N),Hn(1:N,1:N), Un(1:N,1:N),Cvn(1:N,1:N),Mi(1:N),sigmai(1:N),sigmaij(1:N,1:N),Mij(1:N,1:N),&
        & sigmaiaux(1:N),sigmaiab(1:N,1:N,1:N)) 		
   allocate(EonRTabsquared(1:N,1:N),ConRab_fixedconf(1:N,1:N)) !PIER: added this 27/8/24
@@ -141,7 +141,7 @@ program WSME_genTden_loopy
                                 !     O:
              &          e,Phi,natbase)
         !     natbase,phi (1,2,3)= completely native and unfolded baselines for FRT,H/RT,C/R
-        auxe=e(1:4,1:N,1:N)
+        auxe=e(1:4,1:N,0:N)
 
 
 
@@ -287,7 +287,7 @@ program WSME_genTden_loopy
                enddo !i
                fun_L(l_index)=fun_L(l_index)/(N-l_index+1) !normalization
             enddo
-            write(73,*) fun_L
+            write(73,*) T, fun_L
         endif
 
         do i=1,N

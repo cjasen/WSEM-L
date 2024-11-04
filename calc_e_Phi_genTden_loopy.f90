@@ -21,7 +21,7 @@ contains
 
     real(kind=db),intent(in):: y(nparmax),T,c_den !c_den= denaturant concentration
     integer, intent(in) :: SS_matrix(:,:) 
-    real(kind=db),intent(out):: e(4,N,N),Phi(3),natbase(3) !native  baselines (the unfolded one are the Phi: 1->F,2->H,3->C) 
+    real(kind=db),intent(out):: e(4,N,0:N),Phi(3),natbase(3) !native  baselines (the unfolded one are the Phi: 1->F,2->H,3->C) 
     !     e(1,i,j)= h(i,j)/RT= eq (37b,c)
     !     e(2,i,j)=v(i,j)/RT  
     !     e(3,i,j)=D(i,j)/R   
@@ -91,13 +91,16 @@ contains
           natbase(2)=natbase(2)+e(2,i,j)
           natbase(3)=natbase(3)+e(3,i,j)
 
-          if (j.eq.i) then !PIER: CHANGED THE STRUCTURE OF THE e, putting all the entropy in e(4,,)  27/8/24
-            e(4,i,i)=DeltaS/R !PIER: notice that this represents the entropy cost of native residue i (so, this is negative)
-            natbase(1)=natbase(1)-deltaS/R !PIER: CHANGED  27/8/24
+          if (j.eq.i) then !not sure this block shouldn't be after the following if-block
+            e(4,i,i-1)=DeltaS/R !PIER: notice that this represents the entropy cost of native residue i (so, this is negative)
+            natbase(1)=natbase(1)-deltaS/R
          endif
-         if (j-i>1) then 
-           e(4,i,j)=1.5*log (real(j - i))+1.5*(rCalpha(i,j)**2-3.8**2)/((j-i)*2*20*3.8) !Ooka's entropy: entropy cost of forming a large string of loops, i.e. sigma 11111111...
-           !Zhou's entropy (looking at the previous formula for Ooka, I suppose we are working with Kb=1):
+
+         if (j-i>=4) then !where the number is lmin, the minimum lenght allowed. Previous versions had condition: j-i > 1
+           !Ooka's entropy: 
+           e(4,i,j)=1.5*log (real(j+1 - (i-1)))+1.5*(rCalpha(i-1,j+1)**2-3.8**2)/((j-i+2)*2*20*3.8)
+           
+           !Zhou's entropy:
            lc=(j-i)*3.8 !total lenght of the chain
            lp=6 !persistence length in Amstrongs (Pablo used 20, but i have NaN)
            d=rCalpha(i,j) !I use "d" to mantain the notation of Zhou et all
@@ -108,10 +111,11 @@ contains
            & - (6799.0_db * d**4 / (1600.0_db * lc**4)) &
            & + (3441.0_db * d**6 / (2800.0_db * lp * lc**5)) &
            & - (1089.0_db * d**8 / (12800.0_db * lp**2 * lc**6))
-
            !e(4,i,j) = -1.5*log(4*pi*lp*lc/3) - 3*d**2/(4*lp*lc) + log(1-w)
-         endif
 
+         else
+            e(4,i,j)=500 !the number is AVERYBIGNUMBER, a penalty for forbiden loops (if >1000 it produces NaN)
+         endif
        end do
     enddo
 
