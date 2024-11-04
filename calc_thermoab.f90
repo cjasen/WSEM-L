@@ -95,12 +95,18 @@ module thermoab
             H(i,j)=H(i,j)-econtrib(1,j+offset,j+offset)
             aux=H(i,j)
             
-            if (j-i>1) then
+            if (j==i) then ! PIER: changed 31/10/24
+               H(i, i) = H(i, i)+econtrib(4,i+offset,i+offset)
+               aux1=econtrib(4,i+offset,i+offset)             
+            endif
+
+            if (j-i>=1) then
                H(i, j) = H(i, j)+econtrib(4,i+offset,j+offset)-econtrib(4,i+offset,j+offset-1)
                aux1=econtrib(4,i+offset,j+offset)-econtrib(4,i+offset,j+offset-1)               
             endif
-            H(i,j)=H(i,j)+ econtrib(4,j+offset,j+offset) !PIER: changed sign and econtrib(4) 27/08/24
-            aux1=aux1+ econtrib(4,j+offset,j+offset)
+
+           H(i,j)=H(i,j)+ econtrib(4,j+offset,j-1+offset) !PARA AÑADIR EL TÉRMINO DE ENTROPíA UNFOLDED
+           aux1=aux1+ econtrib(4,j+offset,j-1+offset)
 
             if(H(i,j)<auxHmin) then
                auxmin=aux
