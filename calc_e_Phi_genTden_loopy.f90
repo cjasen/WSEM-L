@@ -90,26 +90,28 @@ contains
           natbase(1)=natbase(1)+e(1,i,j) !PIER: CHANGED SIGN 27/8/24
           natbase(2)=natbase(2)+e(2,i,j)
           natbase(3)=natbase(3)+e(3,i,j)
-          if (j.eq.i) then !PIER: CHANGED THE STRUCTURE OF THE e, putting all the entropy in e(4,,)  27/8/24
-             e(4,i,i)=DeltaS/R !PIER: notice that this represents the entropy cost of native residue i (so, this is negative)
-             natbase(1)=natbase(1)-deltaS/R !PIER: CHANGED  27/8/24
-          endif
-          if (j-i>1) then 
-            !e(4,i,j)=1.5*log (real(j - i))+1.5*(rCalpha(i,j)**2-3.8**2)/((j-i)*2*20*3.8) !Ooka's entropy: entropy cost of forming a large string of loops, i.e. sigma 11111111...
-            !Zhou's entropy (looking at the previous formula for Ooka, I suppose we are working with Kb=1):
-            lc=(j-i)*3.8 !total lenght of the chain
-            lp=6 !persistence length in Amstrongs (Pablo used 20, but i have NaN)
-            d=rCalpha(i,j) !I use "d" to mantain the notation of Zhou et all
-            w = (5.0_db * lp / (4.0_db * lc)) - (2.0_db * d**2 / lc**2) &
-            & + (33.0_db * d**4 / (80.0_db * lp * lc**3)) &
-            & + (79.0_db * lp**2 / (160.0_db * lc**2)) &
-            & + (329.0_db * d**2 * lp / (120.0_db * lc**3)) &
-            & - (6799.0_db * d**4 / (1600.0_db * lc**4)) &
-            & + (3441.0_db * d**6 / (2800.0_db * lp * lc**5)) &
-            & - (1089.0_db * d**8 / (12800.0_db * lp**2 * lc**6))
 
-            e(4,i,j) = -1.5*log(4*pi*lp*lc/3) - 3*d**2/(4*lp*lc) + log(1-w)
-          endif
+          if (j.eq.i) then !PIER: CHANGED THE STRUCTURE OF THE e, putting all the entropy in e(4,,)  27/8/24
+            e(4,i,i)=DeltaS/R !PIER: notice that this represents the entropy cost of native residue i (so, this is negative)
+            natbase(1)=natbase(1)-deltaS/R !PIER: CHANGED  27/8/24
+         endif
+         if (j-i>1) then 
+           e(4,i,j)=1.5*log (real(j - i))+1.5*(rCalpha(i,j)**2-3.8**2)/((j-i)*2*20*3.8) !Ooka's entropy: entropy cost of forming a large string of loops, i.e. sigma 11111111...
+           !Zhou's entropy (looking at the previous formula for Ooka, I suppose we are working with Kb=1):
+           lc=(j-i)*3.8 !total lenght of the chain
+           lp=6 !persistence length in Amstrongs (Pablo used 20, but i have NaN)
+           d=rCalpha(i,j) !I use "d" to mantain the notation of Zhou et all
+           w = (5.0_db * lp / (4.0_db * lc)) - (2.0_db * d**2 / lc**2) &
+           & + (33.0_db * d**4 / (80.0_db * lp * lc**3)) &
+           & + (79.0_db * lp**2 / (160.0_db * lc**2)) &
+           & + (329.0_db * d**2 * lp / (120.0_db * lc**3)) &
+           & - (6799.0_db * d**4 / (1600.0_db * lc**4)) &
+           & + (3441.0_db * d**6 / (2800.0_db * lp * lc**5)) &
+           & - (1089.0_db * d**8 / (12800.0_db * lp**2 * lc**6))
+
+           !e(4,i,j) = -1.5*log(4*pi*lp*lc/3) - 3*d**2/(4*lp*lc) + log(1-w)
+         endif
+
        end do
     enddo
 
