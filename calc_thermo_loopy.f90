@@ -95,8 +95,8 @@ contains
     H=1.0_db
     do j=1,leng
        do i=1,j
-          if (j == 1) then
-             H(i, j) = exp(logZetaab(i, 1))
+          if (j == i) then
+             H(i, j) = exp(logZetaab(i, j))
           else
              H(i, j) = exp(logZetaab(i, j) - logZetaab(i, j - 1)) !OK contribution of all folded string ij to the interaction with j
           end if
@@ -109,8 +109,8 @@ contains
        O=0.0_db
        do j=1,leng
           do i=1,j
-             if (j== 1) then
-                O(i, j) = EonRTab(i, 1) !This things were calculated on calc_thermo_ab
+             if (j== i) then
+                O(i, j) = EonRTab(i, j) !This things were calculated on calc_thermo_ab
              else
                 O(i, j) = EonRTab(i, j) - EonRTab(i, j - 1)
              end if
@@ -122,9 +122,9 @@ contains
        !     to calculate the average on m of EonRTsquared
        O2=0.0_db
        do j=1,leng
-          do i=1,j 
-             if (j== 1) then !PIER: changed this if 27/8/24
-                O2(i, j) = EonRTabsquared(i, 1)
+          do i=1,j
+             if (j== i) then !PIER: changed this if 27/8/24
+                O2(i, j) = EonRTabsquared(i, j)
              else
                 O2(i, j) = EonRTabsquared(i, j) - EonRTabsquared(i, j - 1)
              end if
@@ -135,9 +135,9 @@ contains
        !Now O3 has the output for the specific heat, but on calc_thermo_ab O3 didn't exist and that contribution was in O2
        O3=0.0_db
        do j=1,leng
-          do i=1,j 
-             if (j== 1) then !PIER: changed this if 27/8/24
-                O3(i, j) = ConRabfixed(i, 1)
+          do i=1,j
+             if (j== i) then !PIER: changed this if 27/8/24
+                O3(i, j) = ConRabfixed(i, j)
              else
                 O3(i,j)=ConRabfixed(i,j)-ConRabfixed(i,j-1)
              end if
