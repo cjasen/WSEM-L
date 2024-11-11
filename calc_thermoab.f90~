@@ -66,7 +66,7 @@ module thermoab
 
       implicit none
       integer,intent(in) :: a_start,leng ! for region (a,b), a_start=a, leng=b-a+1
-      real(kind=db),intent(in):: econtrib(:,:,0:) !econtrib(3,leng,leng)
+      real(kind=db),intent(in):: econtrib(:,:,:) !econtrib(3,leng,leng)
       real(kind=db),intent(out):: logZeta,EonRT, ConR, sigma, sigmai(1:N)
       real(kind=db) :: sigma_st_ab(1:ST_length), sigma_st_ab_all(1:N,1:N) 
       real(kind=db),intent(out):: EonRTsquared,ConR_fixedconf    !PIER: added this, also in the argument 27/08/24
@@ -83,7 +83,6 @@ module thermoab
       auximin=0;auxjmin=0;auximax=0;auxjmax=0;
       do j=1,leng
          do i=1,j
-            
             aux=0.;aux1=0.;
             !PIER: here H(i,j)=beta (DeltaH(i->j)-DeltaH(i->j-1))
             !PIER: Here we are assuming that V^{l,l} =0 the interactions within a loop have no energy, like those in the unfolded regions, so that the contdition 8, 14 in the notes become DeltaV^(n,l)=DeltaV^(l,l)/2=-V^nn/2
@@ -96,17 +95,13 @@ module thermoab
             H(i,j)=H(i,j)-econtrib(1,j+offset,j+offset)
             aux=H(i,j)
             
-            if (j==i) then
-               H(i, i) = H(i, i)+econtrib(4,i+offset,i+offset)
-               aux1=econtrib(4,i+offset,i+offset)             
-            endif
-            
-            if (j-i>=1) then
+            if (j-i>1) then
                H(i, j) = H(i, j)+econtrib(4,i+offset,j+offset)-econtrib(4,i+offset,j+offset-1)
                aux1=econtrib(4,i+offset,j+offset)-econtrib(4,i+offset,j+offset-1)               
             endif
-            H(i,j)=H(i,j)+ econtrib(4,j+offset,j-1+offset) !PIER: changed sign and econtrib(4) 27/08/24
-            aux1=aux1+ econtrib(4,j+offset,j-1+offset)
+            H(i,j)=H(i,j)+ econtrib(4,j+offset,j+offset) !PIER: changed sign and econtrib(4) 27/08/24
+            aux1=aux1+ econtrib(4,j+offset,j+offset)
+
             if(H(i,j)<auxHmin) then
                auxmin=aux
                aux1min=aux1

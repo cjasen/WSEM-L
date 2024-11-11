@@ -94,19 +94,17 @@ contains
              e(4,i,i-1)=DeltaS/R !PIER: notice that this represents the entropy cost of native residue i (so, this is negative)
              natbase(1)=natbase(1)-deltaS/R !PIER: CHANGED  27/8/24
           endif
-
-          if (j-i>=80) then
+          if (j-i>=0) then
              if((i==1).or.(j==N)) then
-               e(4,i,j)=0._db
+                e(4,i,j)=0._db
              else
-               !Ooka's entropy:   
-               !e(4,i,j)=1.5*log (real(j - i+2))+1.5*(rCalpha(i-1,j+1)**2-3.8**2)/((j-i+2)*2*20*3.8) 
-
-               !Zhou's entropy:
-               lc=(j-i+2)*3.8 !total lenght of the chain
-               lp=3.04 !persistence length in Amstrongs (Pablo used 20, but i have NaN)
-               d=rCalpha(i-1,j+1) !I use "d" to mantain the notation of Zhou et all
-               w = (5.0_db * lp / (4.0_db * lc)) - (2.0_db * d**2 / lc**2) &
+                
+            !e(4,i,j)=1.5*log (real(j - i))+1.5*(rCalpha(i,j)**2-3.8**2)/((j-i)*2*20*3.8) !Ooka's entropy: entropy cost of forming a large string of loops, i.e. sigma 11111111...
+            !Zhou's entropy (looking at the previous formula for Ooka, I suppose we are working with Kb=1):
+                lc=(j-i+2)*3.8 !total lenght of the chain
+                lp=3.04 !persistence length in Amstrongs (Pablo used 20, but i have NaN)
+                d=rCalpha(i-1,j+1) !I use "d" to mantain the notation of Zhou et all
+                w = (5.0_db * lp / (4.0_db * lc)) - (2.0_db * d**2 / lc**2) &
                      & + (33.0_db * d**4 / (80.0_db * lp * lc**3)) &
                      & + (79.0_db * lp**2 / (160.0_db * lc**2)) &
                      & + (329.0_db * d**2 * lp / (120.0_db * lc**3)) &
@@ -114,13 +112,9 @@ contains
                      & + (3441.0_db * d**6 / (2800.0_db * lp * lc**5)) &
                      & - (1089.0_db * d**8 / (12800.0_db * lp**2 * lc**6))
 
-               e(4,i,j) = 1.5*log(4*pi*lp*lc/3) - 3*d**2/(4*lp*lc) + log(1-w)
+                e(4,i,j) = -1.5*log(4*pi*lp*lc/3) - 3*d**2/(4*lp*lc) + log(1-w)
              endif
-            else
-            e(4,i,j)=200._db
           endif
-          if(isnan(e(4,i,j))) e(4,i,j)=e(4,i,j-1)
-          !write(*,*) "e(4,",i,",",j,")=",e(4,i,j)
        end do
     enddo
 
