@@ -1,32 +1,31 @@
-# Paquetes necesarios
+# Cargar las librerías necesarias
 library(ggplot2)
 library(dplyr)
-library(reshape2)  # Si no tienes reshape2, instala con install.packages("reshape2")
+library(tidyr)
 
-# Cargar datos
-data <- read.table("f_L_zhou.txt", header = FALSE)
+# Leer los datos del archivo
+leer_datos <- function(ruta_archivo) {
+  datos <- read.table(ruta_archivo, header = FALSE)
+  colnames(datos) <- c("Temperatura", paste0("f", 1:(ncol(datos) - 1)))
+  return(datos)
+}
 
-# Nombrar columnas
-colnames(data) <- c("T", paste0("f", 1:(ncol(data) - 1)))
-
-# Convertir el data frame en formato largo para ggplot usando melt
-data_long <- melt(data, id.vars = "T", variable.name = "L", value.name = "f")
-data_long$L <- as.numeric(gsub("f", "", data_long$L))  # Convertir "f1", "f2", etc. a números
-
-# Función para graficar temperaturas seleccionadas
-graficar_temperaturas <- function(temperaturas) {
-  # Filtrar solo las temperaturas deseadas
-  data_filtrada <- data_long %>% filter(T %in% temperaturas)
+# Función para graficar los datos
+graficar_todas_las_temperaturas <- function(datos) {
+  # Transformar los datos para ggplot
+  datos_largos <- datos %>%
+    pivot_longer(-Temperatura, names_to = "Indice", values_to = "Valor") %>%
+    mutate(Indice = as.numeric(gsub("f", "", Indice)))
   
-  ggplot(data_filtrada, aes(x = L, y = f, color = as.factor(T), group = T)) +
+  # Crear el gráfico
+  ggplot(datos_largos, aes(x = Indice, y = Valor, color = factor(Temperatura))) +
     geom_line() +
-    scale_x_log10() +
-    geom_vline(xintercept = 2, linetype = "dashed", color = "red") +  # Línea discontinua en x = 2
-    labs(x = "L (log)", y = "f(L)", color = "Temperatura T") +
+    scale_x_log10() +  # Escala logarítmica en el eje x
+    labs(x = "L", y = "f(L)", color = "T") +
     theme_minimal()
 }
 
-
-# Ejemplo de uso: Graficar temperaturas específicas
-temperaturas_a_graficar <- c(310, 360, 400)  # Modifica con las temperaturas deseadas
-graficar_temperaturas(temperaturas_a_graficar)
+# Ejemplo de uso
+ruta_archivo <- "f_L.txt"
+datos <- leer_datos(ruta_archivo)
+graficar_todas_las_temperaturas(datos)

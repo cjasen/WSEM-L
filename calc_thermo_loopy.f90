@@ -421,7 +421,7 @@ contains
                sigma_st(p)=sigma_st(p)+F(i)
             enddo
 
-            sigma_st(p)=sigma_st(p)/(t-s+1) !normalization
+            !sigma_st(p)=sigma_st(p)/(t-s+1) !normalization
 
          end do !j    
       end do !p      
@@ -462,7 +462,7 @@ contains
                   do i=1,j+1
                      sigma_st_all(s,t)=sigma_st_all(s,t)+F(i)
                   enddo
-                  sigma_st_all(s,t)=sigma_st_all(s,t)/(t-s+1) !normalization
+                  !sigma_st_all(s,t)=sigma_st_all(s,t)/(t-s+1) !normalization
       
                end do !j    
 

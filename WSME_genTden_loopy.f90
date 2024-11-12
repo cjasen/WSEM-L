@@ -235,11 +235,9 @@ program WSME_genTden_loopy
         EnthonRT=EonRT+Phi(2)
         ConR=ConR+Phi(3)
 
-
         write(20,*) cden,T,(Mavg-Minf)/(M0-Minf),sigmaavg,&
              &       R*T*FreeonRT,R*T*EnthonRT,R*(EnthonRT-FreeonRT),R*ConR,R*Phi(3),R*natbase(3)
-        !write(20,55) T,R*ConR
-        !         write(*,*) T,R*T*FreeonRT
+             
         write(94,*)R*ConR ! specific heat
         if (wFprof.or.wmprof) then
            F=0.
@@ -278,7 +276,6 @@ program WSME_genTden_loopy
 
         if(f_L) then
             fun_L=0._db
-            !write(73,*) "# [Den]    T    f(1)    f(2)    f(N)"
 
             do l_index=1,N
                do i=1,N-l_index+1
@@ -286,7 +283,7 @@ program WSME_genTden_loopy
                enddo !i
                fun_L(l_index)=fun_L(l_index)/(N-l_index+1) !normalization
             enddo
-            write(73,*) fun_L
+            write(73,*) T, fun_L
         endif
 
         do i=1,N

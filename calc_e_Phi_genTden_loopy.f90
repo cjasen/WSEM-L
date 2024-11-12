@@ -95,7 +95,7 @@ contains
              natbase(1)=natbase(1)-deltaS/R !PIER: CHANGED  27/8/24
           endif
 
-          if (j-i>=80) then
+          if (j-i>=0) then
              if((i==1).or.(j==N)) then
                e(4,i,j)=0._db
              else
@@ -114,10 +114,10 @@ contains
                      & + (3441.0_db * d**6 / (2800.0_db * lp * lc**5)) &
                      & - (1089.0_db * d**8 / (12800.0_db * lp**2 * lc**6))
 
-               e(4,i,j) = 1.5*log(4*pi*lp*lc/3) - 3*d**2/(4*lp*lc) + log(1-w)
+               e(4,i,j) = 1.5*log(4*pi*lp*lc/3) + 3*d**2/(4*lp*lc) - log(1-w)
              endif
             else
-            e(4,i,j)=200._db
+            e(4,i,j)=100._db
           endif
           if(isnan(e(4,i,j))) e(4,i,j)=e(4,i,j-1)
           !write(*,*) "e(4,",i,",",j,")=",e(4,i,j)

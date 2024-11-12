@@ -22,13 +22,13 @@ calc_S2 <- function(d, delta_ji) {
     (79.0 * lp^2 / (160.0 * lc^2)) + 
     (329.0 * d^2 * lp / (120.0 * lc^3)) - 
     (6799.0 * d^4 / (1600.0 * lc^4)) + 
-    (3441.0 * d^6 / (2800.0 * lp * lc^5)) #-   (1089.0 * d^8 / (12800.0 * lp^2 * lc^6))
-  S <- 1.5 * log(4 * pi * lp * lc / 3) - 3 * d^2 / (4 * lp * lc) + log(1 - w)
+    (3441.0 * d^6 / (2800.0 * lp * lc^5)) -  (1089.0 * d^8 / (12800.0 * lp^2 * lc^6))
+  S <-  1.5 * log(4 * pi * lp * lc / 3) + 3 * d^2 / (4 * lp * lc) - log(1 - w)
   return(S)
 }
 
 # Valores de delta_ji y rango de d
-delta_ji <- c(0,5,20, 120)
+delta_ji <- c(0,5,20, 80)
 d <- seq(0, 1, 0.01)
 
 # Calcular S1 y S2 para cada combinación de d y delta_ji
@@ -51,7 +51,7 @@ ggplot(data_long, aes(x = d, y = S_value, color = factor(delta_ji), linetype = S
 
 ############################ FIXED DISTANCE
 
-d <- c(0.1, 0.3 , 0.6, 1)
+d <- c(0.1, 0.3 , 0.6, 0.8)
 delta_ji <- seq(0,120,1)
 
 data2 <- expand.grid(d = d, delta_ji = delta_ji) %>%
@@ -63,7 +63,7 @@ data_long2 <- data2 %>%
 
 ggplot(data_long2, aes(x = delta_ji, y = S_value, color = factor(d), linetype = S_type)) +
   geom_line(size = 1.2) + 
-  labs(title = "fixed d (r_ij) w/out Zhou's last term", 
+  labs(title = "fixed d (r_ij)", 
        x = "delta_ij", 
        y = "S", 
        color = "d/lc", 
