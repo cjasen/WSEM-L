@@ -202,7 +202,7 @@ program WSME_genTden_loopy
                      Un(i,j)=Un(i,j)+auxe(2,k,g)
                      Cvn(i,j)=Cvn(i,j)+auxe(3,k,g)
                      if (k.eq.g) then
-                        Hn(i,j)=Hn(i,j)- auxe(4,k,k) !PIER: added this 27/08/2024
+                        Hn(i,j)=Hn(i,j)- auxe(4,k,k-1) !PIER: added this 27/08/2024
                      endif
                   enddo
                enddo
@@ -222,8 +222,6 @@ program WSME_genTden_loopy
         ConRab_fixedconftot=ConRab_fixedconf+Cvn !PIER: added this  27/8/24
 
         !finally we calculate partition function and observables:
-        !PIER: CHANGE calc_thermo:
-
         !notice calc_thermoab was in bucle of (a->b) while here the argument is just the number of residues N bc the bucle is within the subroutine
         call calc_thermo2(N, logZetaab, EonRTabtot,EonRTabsquaredtot, ConRab_fixedconftot, sigmaab,sigmaiab,sigma_st_ab_matrix,&
         &      sigma_st_ab_all_matrix, logZeta, EonRT, ConR,ConRfixave, Mavg, sigmaavg,fracfold,Mi,sigmai,Mij,sigmaij,&
@@ -237,7 +235,7 @@ program WSME_genTden_loopy
 
         write(20,*) cden,T,(Mavg-Minf)/(M0-Minf),sigmaavg,&
              &       R*T*FreeonRT,R*T*EnthonRT,R*(EnthonRT-FreeonRT),R*ConR,R*Phi(3),R*natbase(3)
-             
+
         write(94,*)R*ConR ! specific heat
         if (wFprof.or.wmprof) then
            F=0.
@@ -278,11 +276,26 @@ program WSME_genTden_loopy
             fun_L=0._db
 
             do l_index=1,N
-               do i=1,N-l_index+1
-                  fun_L(l_index)=fun_L(l_index)+sigma_st_all(i,i+l_index-1) !f(L)~ sum_i^N-L+1 [ <prod_k=i^i+L-1 m_k sigma_k> ] where <prod_k=i^i+L-1 m_k sigma_k> is sigma_st_all(s,t). No bucle for k is needed.
+               do i=1,N-l_index+1  !f(L)~ sum_i^N-L+1 [ <prod_k=i^i+L-1 m_k sigma_k> ] where <prod_k=i^i+L-1 m_k sigma_k> is sigma_st_all(s,t). No bucle for k is needed.
+                  j=i+l_index-1
+                  if(i/=1 .and. j/=N) then
+                     fun_L(l_index)=fun_L(l_index)+&
+                     & ( sigma_st_all(i,j) - sigma_st_all(i,j+1) - &
+                     &   sigma_st_all(i-1,j) + sigma_st_all(i-1,j+1))
+                  endif
+                  if(i/=1 .and. j==N) then
+                     fun_L(l_index)=fun_L(l_index)+&
+                      & ( sigma_st_all(i,j) -  sigma_st_all(i-1,j)) 
+                  endif
+                  if(i==1 .and. j/=N) then
+                     fun_L(l_index)=fun_L(l_index)+&! max(,0) to avoid case L=i=j=1, <ij> = 0 and <i,j+1> = 1
+                     & max(sigma_st_all(i,j) - sigma_st_all(i,j+1),0.0_db)
+                  endif
+                  if(i==1 .and. j==N) fun_L(l_index)=fun_L(l_index)+sigma_st_all(i,j)
                enddo !i
                fun_L(l_index)=fun_L(l_index)/(N-l_index+1) !normalization
             enddo
+
             write(73,*) T, fun_L
         endif
 

@@ -1,8 +1,8 @@
 128  !n of residues
 1711 !number of electrostatic contacts
 14400.0 !protein mass (g/mol)
--8.812E-002  -2.412E-002   29.0 0.05 -4.671E-004 1.575E-003   5.541E-003  !contact eps  (KJ/mol),entropy of one residue q (KJ/K/mol), eps_eff, Isolv(M), deltaCp(KJ mol-1 K-1), a(KJ/molK), b(KJ/molK2)
-200.,400.,130.,385 !280,380,0.05,385
+-7.312E-002  -1.612E-002   29.0 0.05 -9.571E-004 1.575E-003   5.541E-003  !contact eps  (KJ/mol),entropy of one residue q (KJ/K/mol), eps_eff, Isolv(M), deltaCp(KJ mol-1 K-1), a(KJ/molK), b(KJ/molK2)
+5.,600.,10.,385 !280,380,0.05,385
 20 !number of experimental datapoints for specific heat (only used while optimization, if you don't have data, just put any positive number
 0,0,1 !(en nuestro caso, 0,0,1 ; el valor diferente de 1 sirve para salir del bucle) 
 2	! the first number is the number of (S,T) intervals you want to calculate <prod_k=S^T m_k sigma_k>. Then it follows the values of S, and then those for T	
@@ -30,7 +30,7 @@ ct
 .false. !if .true., the model will use disulfide bridges e(1,SS_matrix(i,1),SS_matrix(i,2)) = -200.0_db
 .true. !if .false., removes the cmd output of WSME_genTden
 .true. !if .true., deltaT takes a constant value (the one given before). Used while optimization if experimental data hasn't a constant deltaT
-.true. !if .true., it calculates f(L) which implies the calculation of all <prod_k=s^t m_k sigma_k> islands
+.false. !if .true., it calculates f(L) which implies the calculation of all <prod_k=s^t m_k sigma_k> islands
 
 !# -5.277E-002  -1.1702E-002   29.0    5.0E-002   -2.204E-004   1.569E-003   5.547E-003
 !# 10,10.2,0.05,385 !286,380,0.05,385

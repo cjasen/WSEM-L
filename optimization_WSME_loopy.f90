@@ -144,7 +144,6 @@ subroutine dist(d,npar,params)
 
     if(npar==3) then
         parv(1) = params(1) !eps
-
         parv(2) = params(2) !s
         parv(3)= y(1) !epsilon_eff
         parv(4) = y(2) !I_solv
