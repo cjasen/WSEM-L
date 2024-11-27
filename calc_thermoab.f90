@@ -14,7 +14,7 @@ module thermoab
                                 ! I:
            & a_start,leng,econtrib,& ! econtrib is auxe which is also e, the matrix with the ~h_ij calculated in calc_e_Phi
                                 ! O:
-           & logZeta,EonRT,EonRTsquared,ConR_fixedconf,ConR,sigma,sigmai,fracfold,sigma_st_ab,sigma_st_ab_all)
+           & logZeta,EonRT,EonRTsquared,ConR_fixedconf,ConR,sigma,sigmai,fracfold,sigma_st_ab,sigma_st_ab_all,gamma)
         !     use defreal
         !     use phys_const
         !     use globalpar , only : wfoldfr
@@ -27,7 +27,7 @@ module thermoab
         real(kind=db),intent(in):: econtrib(:,:,:) !econtrib(4,leng,leng)
         real(kind=db),intent(out):: logZeta,EonRT,ConR,sigma,sigmai(1:N),fracfold,sigma_st_ab(1:ST_length),sigma_st_ab_all(1:N,1:N)
         real(kind=db),intent(out):: EonRTsquared,ConR_fixedconf    !PIER: added this, also in the argument 27/08/24
-        real(kind=db):: nu(1:leng,1:leng),F(0:leng)
+        real(kind=db):: nu(1:leng,1:leng),F(0:leng),gamma
 
         logical,parameter :: withmprof=.false.
 
@@ -38,7 +38,8 @@ module thermoab
         sigma_st_ab=0._db
         sigma_st_ab_all=0._db
         nu=0._db
-        call datiab(logZeta,EonRT,EonRTsquared,ConR_fixedconf,ConR,sigma,sigmai,sigma_st_ab,sigma_st_ab_all,econtrib,a_start,leng) !dati is the plural for data, as this calculates thermo data. Terrible name.
+        call datiab(logZeta,EonRT,EonRTsquared,ConR_fixedconf,ConR,sigma,sigmai,sigma_st_ab,sigma_st_ab_all,&
+        & econtrib,a_start,leng,gamma) !dati is the plural for data, as this calculates thermo data. Terrible name.
         ! write(*,*) 'main:: structF/RT=' ,-logZeta
 
 
@@ -59,7 +60,7 @@ module thermoab
                                 !     O:
          & logZeta,EonRT,EonRTsquared,ConR_fixedconf,ConR,sigma,sigmai,sigma_st_ab,sigma_st_ab_all, &
                                 !     I:
-         &  econtrib,a_start,leng)
+         &  econtrib,a_start,leng,gamma)
       !   use defreal
       !   use protdep_par, only: N
       !   use globalpar
@@ -68,19 +69,16 @@ module thermoab
       integer,intent(in) :: a_start,leng ! for region (a,b), a_start=a, leng=b-a+1
       real(kind=db),intent(in):: econtrib(:,:,0:) !econtrib(3,leng,leng)
       real(kind=db),intent(out):: logZeta,EonRT, ConR, sigma, sigmai(1:N)
-      real(kind=db) :: sigma_st_ab(1:ST_length), sigma_st_ab_all(1:N,1:N) 
+      real(kind=db) :: sigma_st_ab(1:ST_length), sigma_st_ab_all(1:N,1:N),gamma 
       real(kind=db),intent(out):: EonRTsquared,ConR_fixedconf    !PIER: added this, also in the argument 27/08/24
       integer :: i,j,k,offset,s,t,p
       real(kind=db):: H(leng,leng),O(leng,leng),A(leng+1),B(leng+1),C(leng+1),D(leng+1),E(leng+1),Z,X,Y,zaux
       real(kind=db):: Zeta,O2(leng,leng),B2(leng+1),X2
       real(kind=db):: aux,aux1,auxmin,auxmax,aux1min,aux1max,auxHmin,auxHmax !FOR CHECKS
-      integer:: auximin,auximax,auxjmin,auxjmax !FOR CHECKS
+
       offset=a_start-1 !to know in which part of the whole residue chain our island starts
 
       H=0.0_db
-      auxHmax=-100000000000000.
-      auxHmin=100000000000000.
-      auximin=0;auxjmin=0;auximax=0;auxjmax=0;
       do j=1,leng
          do i=1,j
             
@@ -88,12 +86,12 @@ module thermoab
             !PIER: here H(i,j)=beta (DeltaH(i->j)-DeltaH(i->j-1))
             !PIER: Here we are assuming that V^{l,l} =0 the interactions within a loop have no energy, like those in the unfolded regions, so that the contdition 8, 14 in the notes become DeltaV^(n,l)=DeltaV^(l,l)/2=-V^nn/2
             do k=1,j-1
-               H(i,j)=H(i,j)-econtrib(1,k+offset,j+offset)/2 !PIER: changed  27/08/24
+               H(i,j)=H(i,j)-(1+gamma)*econtrib(1,k+offset,j+offset)/2 !PIER: changed  27/08/24, CARLOS: added gamma 26/11/24
             enddo
             do k=j+1,leng
-               H(i,j)=H(i,j)-econtrib(1,j+offset,k+offset)/2 !PIER: changed  27/08/24
+               H(i,j)=H(i,j)-(1+gamma)*econtrib(1,j+offset,k+offset)/2 !PIER: changed  27/08/24
             enddo
-            H(i,j)=H(i,j)-econtrib(1,j+offset,j+offset)
+            H(i,j)=H(i,j)-(1+gamma)*econtrib(1,j+offset,j+offset)
             aux=H(i,j)
             
             if (j==i) then
@@ -107,24 +105,7 @@ module thermoab
             endif
             H(i,j)=H(i,j)+ econtrib(4,j+offset,j-1+offset) !PIER: changed sign and econtrib(4) 27/08/24
             aux1=aux1+ econtrib(4,j+offset,j-1+offset)
-            if(H(i,j)<auxHmin) then
-               auxmin=aux
-               aux1min=aux1
-               auxHmin=H(i,j)
-               auximin=i
-               auxjmin=j
-            endif
-            if(H(i,j)>auxHmax) then
-               auxmax=aux
-               aux1max=aux1
-               auxHmax=H(i,j)
-               auximax=i
-               auxjmax=j
-            endif
 
-
-!            aux=0
-!            aux1=0
             H(i,j)=exp(-H(i,j))
          enddo
       enddo

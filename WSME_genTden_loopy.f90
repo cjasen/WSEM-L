@@ -164,7 +164,7 @@ program WSME_genTden_loopy
            do baux=aaux,N
               call calc_thermoab(aaux,baux-aaux+1,auxe,& !calculates the contributions of each (a->b) island of m=1,s=0 in a sea of m=1,s=1
                    &  logZetaaux,EonRTaux,EonRTsquaredaux,ConR_fixedconfaux,ConRaux,sigmaaux,sigmaiaux,fracfold,sigma_st_ab_aux,& !sigmaaux is <s>_(a,b). sigmai(aux) is <s_i>_ab = sum_(a,b) f^i_(a,b)*Z^(a,b) where f=1 if a in (a,b) and 0 if not
-                   &  sigma_st_ab_all_aux) ! <prod_k=s_t m_k sigma_k> for each (s,t) island (only a->b contribution)
+                   &  sigma_st_ab_all_aux,parv(8)) ! <prod_k=s_t m_k sigma_k> for each (s,t) island (only a->b contribution)
                    
 !!$ !PIER: To build the pure WSME limit, without loops, comment lines below: from here...
               logZetaab(aaux,baux)=logZetaaux
@@ -303,12 +303,7 @@ program WSME_genTden_loopy
            write(50,*) T, i, Mi(i),sigmai(i),(Mi(i)-sigmai(i)) ! magnetization for each residue
         enddo
 
-        aux=0
-        do i=1,N
-           aux=aux+sigmai(i)
-        enddo
-
-       if(show_cmd_output) write(*,*) 'T, Cp, <m>, <s>:', T, R*ConR, Mavg, aux/N ! the magnetizations are the average of the whole system, not just of one residue or island
+       if(show_cmd_output) write(*,*) 'T, Cp, <m>, <s>:', T, R*ConR, Mavg, sigmaavg ! the magnetizations are the average of the whole system, not just of one residue or island
 
         T=T+deltaT_array(q)
         q=q+1

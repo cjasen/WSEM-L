@@ -209,7 +209,11 @@ subroutine dist(d,npar,params)
         d=d+ABS(C_sim(p) - C_exp(p))*ABS(C_sim(p) - C_exp(p))
     end do 
 
-    write(*,*) "Iteration: ",eval, " || d= ",d*sqrt(real(nexp)-1)/real(nexp) 
+    write(*,'(A,I0,A,F10.3,A,F10.3,A,F10.3,A,F12.5)') "Iteration: ", eval, " || d= ", &
+    d*sqrt(real(nexp)-1)/real(nexp), "|| eps=", parv(1), "  q=", parv(2), &
+    "   DeltaCp=", parv(5)
+
+
     eval=eval+1
     
     if(MOD(eval, 100) == 0) then

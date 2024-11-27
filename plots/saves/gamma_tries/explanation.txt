@@ -1,0 +1,5 @@
+This files are generated with this parameters:
+
+-8.812E-002  -2.412E-002   29.0 0.05 0.0 1.575E-003   5.541E-003,
+
+and just with the first SS-bond and DeltaCp=0.

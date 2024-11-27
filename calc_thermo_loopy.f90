@@ -183,12 +183,15 @@ contains
        Z=1.0_db
        do i=1,j
           Z=Z+H(i,j)*A(i)
+          !if(isnan(Z)) write(*,*) "Z(",i,",",j,") is NaN"
+
        enddo
        logZeta=logZeta+log(Z)
        Z=1.0_db/Z
 
        do i=1,j
           A(i)=Z*H(i,j)*A(i)
+         !if(isnan(A(i))) write(*,*) "A(",i,",",j,") is NaN"
        enddo
        A(j+1)=Z
 

@@ -29,7 +29,7 @@ end module phys_const
    use defreal
    implicit none
    save
-   integer,parameter:: nparmax=7 !!number of model parameters
+   integer,parameter:: nparmax=8 !!number of model parameters
    real(kind=db) :: Tmin, Tmax,deltaT,T_ref
    integer :: ST_length, nexp
    integer, allocatable :: S_interval(:), T_interval(:) ! intervals to calculate <prod_k=S^T m_k sigma_k>
