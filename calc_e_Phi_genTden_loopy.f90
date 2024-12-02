@@ -114,10 +114,11 @@ contains
                      & + (3441.0_db * d**6 / (2800.0_db * lp * lc**5)) &
                      & - (1089.0_db * d**8 / (12800.0_db * lp**2 * lc**6))
 
-               e(4,i,j) = 1.5*log(4*pi*lp*lc/3) + 3*d**2/(4*lp*lc) - log(1.6-w) +1 ! +1 is for gyration radio
-             endif
+               !e(4,i,j) = 1.5*log(4*pi*lp*lc/3) + 3*d**2/(4*lp*lc) - log(1.6-w) +1 ! +1 is for gyration radio
+               e(4,i,j) = 15
+               endif
             else
-            e(4,i,j)=100._db
+            e(4,i,j)=200._db
           endif
           if(isnan(e(4,i,j))) e(4,i,j)=e(4,i,j-1)
        end do

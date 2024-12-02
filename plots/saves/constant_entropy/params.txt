@@ -1,0 +1,59 @@
+expFit: -8.812E-002  -2.412E-002   29.0 0.05 0.0 1.575E-003   5.541E-003
+
+less_e: bajamos chi. Por ejemplo, less_e_1 baja -8.8e-2 a -7.0e-2
+	*Vemos una bajada de la Tm importante
+
+less_q: bajamos la entropía q. Por ejemplo, less_eq_1 baja la chi a -7.0e-2 y q de -2.4e-2 a -2.2e-2
+	*Parece que sólo sube la Tm
+
+dCp_1: pasamos DeltaCp de 0 a -4.671E-004. En less_eq_1, dCp_1 pasamos de la situación anterior
+	*Vuelven los problemas en T<100 y ahora no hay subida suave porque ya viene de lejos
+	*Al subir la gamma a 0.3 vemos ya que <s> baja a 0 y luego hace la subida suave
+
+dCp_2: -2.371e-4
+	*Mueve el punto en el que <s> va a 0 mucho hacia la izq.
+
+-----------------------
+Volvemos con DeltaCp=0
+-----------------------
+
+Probamos ahora less_eq_1 con g=0.3
+	*Se mueve todo ligeramente hacia la derecha y la <m> baja un poco más
+
+less_e2_q1: bajamos chi a 6.0e-2
+	*La Tm se va a 350K. No hay más cambios.
+
+less_e2_more_q1: dejamos la chi en 6.0e-2 y subimos la q a 2.6e-2
+	*Bajamos la Tm
+
+less_e2_more_q1 con g=0.55
+	*Mueve la Tm sin cambiar nada
+
+-----------------------------------------------------------------
+chi = -6.012E-002  q = -2.212E-002  DeltaCp = -1.371e-4  g = 0.3
+-----------------------------------------------------------------
+
+less_e2_q1_dCp3:
+	* Tm por 350K y sin cola en <s> para T's bajas
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
