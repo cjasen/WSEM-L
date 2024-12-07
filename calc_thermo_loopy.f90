@@ -401,10 +401,10 @@ contains
             A=0._db
             A(1)=1.0_db
    
-            do j=1,t-s+1
+            do j=1,leng
                Z=1.0
                do i=1,j
-                  Z=Z+H(i,j)*A(i)
+                  Z=Z+H(i,j)*A(i) !we have to add an offset=a-1 to acces the hamiltonian correctly
                enddo
                Z=1.0_db/Z
         

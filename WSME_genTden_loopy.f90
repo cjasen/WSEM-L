@@ -166,6 +166,8 @@ program WSME_genTden_loopy
         ConRab_fixedconftot=0._db
         log_ZETA_aux=0._db
         log_ZETA_abj=0._db
+        folded_ab_ij_matrix=0._db
+        folded_ab_matrix=0._db
         do aaux=1,N
            do baux=aaux,N
               call calc_thermoab(aaux,baux-aaux+1,auxe,& !calculates the contributions of each (a->b) island of m=1,s=0 in a sea of m=1,s=1
@@ -197,13 +199,16 @@ program WSME_genTden_loopy
                do k=1,N
                   log_ZETA_abj(aaux,baux,k)=log_ZETA_aux(k) !imagine log_ZETA_abj as a matrix, each row is an (a,b) island and j-th column is ZETA_j (Z_1^(ab), Z2, Z3... 0 0 0 0...0). There are a-b numbers /= 0, and index numbers are relative to "a" (Z1=Za, Z2=Z_a+1...)
                enddo
-               do j=1,baux-aaux+1 !j goes from a to b. I'm substracting the offset (going from 1 to leng)
-                  do i=j,1,-1 !i goes from j to a (j, j-1, j-2...a)
+               do j=aaux,baux
+                  do i=j,aaux,-1 !i goes from j to a (j, j-1, j-2...a)
                      if (i==j) then
-                        folded_ab_ij_matrix(aaux,baux,i,j)=1-sigmaiab(j,aaux,baux) !remember sigmaiab is <sigma_k>^(a,b)
+                        folded_ab_ij_matrix(aaux,baux,i,j)=1-sigmaiab(i,aaux,baux) !remember sigmaiab is <sigma_k>^(a,b)
                      else
-                        folded_ab_ij_matrix(aaux,baux,i,j)=exp(log_ZETA_abj(aaux,baux,i))*folded_ab_ij_matrix(aaux,baux,i+1,j)
+                        folded_ab_ij_matrix(aaux,baux,i,j)=exp(log_ZETA_abj(aaux,baux,i-aaux+1))*&
+                                 folded_ab_ij_matrix(aaux,baux,i+1,j) ! in log_ZETA_abj(aaux,baux,i-a+1), the "-a+1" is an offset
                      endif
+                     !if ( folded_ab_ij_matrix(aaux,baux,i,j) < 0 .or.  folded_ab_ij_matrix(aaux,baux,i,j)>1) &
+                     !write(*,*) "F(",aaux,",",baux,",",i,",",j,")=",folded_ab_ij_matrix(aaux,baux,i,j)
                   enddo
                enddo
               endif
