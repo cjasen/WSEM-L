@@ -13,7 +13,7 @@ program WSME_genTden_loopy
   use disulfide_module
   implicit none
   real(kind=db)::parv(nparmax) !vector of npar parameters on which the energy depends (i.e. q, eps, ...)
-  real(kind=db):: Phi(3),natbase(3)
+  real(kind=db):: Phi(3),natbase(3), Phi_garbage(3), natbase_garbage(3) !garbages are used to get the flipped map w/out breaking anything. Useless output.
   real(kind=db), allocatable :: e(:,:,:),F(:),S(:,:),m(:,:),nu(:,:),auxe(:,:,:)
   real(kind=db):: FreeonRT,EonRT,EnthonRT,logZeta,M0,Minf,ConR,Mavg,sigmaavg !thermodinamic variables
   real(kind=db):: EonRTsquaredaux,ConR_fixedconfaux !PIER: added this 27/8/24
@@ -36,6 +36,9 @@ program WSME_genTden_loopy
 
   real(kind=db),allocatable :: deltaT_array(:), t_exp_aux(:), c_exp_aux(:) !used while optimization
 
+  real(kind=db), allocatable :: folded_ab_ij_matrix(:,:,:,:), folded_ab_matrix(:,:),&
+                                log_ZETA_aux(:),  log_ZETA_abj(:,:,:) !log_ZETA_abj is log of Z_{a,j}^{a,b}/Z_{a,j-1}^{a,b}
+                                                         
   integer:: i,j,k,iM,l_index,q,s_index,t_index,g,aux2,aux3									 
   integer:: aaux,baux !variables to go through islands								 
   !  real(kind=db):: nu(1:N,1:N)
@@ -63,7 +66,7 @@ program WSME_genTden_loopy
   allocate(sigma_st_ab_all_matrix(1:N,1:N,1:N,1:N), sigma_st_ab_all_aux(1:N,1:N), sigma_st_all(1:N,1:N))
   allocate(L(1:N),fun_L(1:N))
   allocate(t_exp_aux(1:nexp),c_exp_aux(1:nexp))
-  
+  allocate(folded_ab_ij_matrix(N,N,N,N),folded_ab_matrix(N,N),log_ZETA_aux(N),log_ZETA_abj(N,N,N))
 
   !if only the specific heat is requested, the input flags are redefined accordingly:
   if(onlyC) then
@@ -78,8 +81,8 @@ program WSME_genTden_loopy
      wstr=.false.
      wProd_ms=.false.
      f_L=.false.
+     fold_profile=.false.
   endif
-
   ! Mavg(T=0K)=1:
   M0=1._db
   ! calculate Minf=Mavg(T=481K)
@@ -99,6 +102,8 @@ program WSME_genTden_loopy
       write(70,*) "#[Cden]    T   <prod_k=s^t m_k sigma_k> for all (s,t) intervals"
   end if
   if(f_L) open(73,file="Output/f_L.txt") !f(L) = 1/(N-L+1) * sum_i^N-L+1 [ <prod_k=i^i+L-1 m_k sigma_k> ] 
+  if(fold_profile) open(47,file="Output/fold_profile.txt") !<prod 1-sigma><prod m>
+
   ! Disulfide bridges
   call get_disulfide_bonds_matrix(pdb_code, SS_matrix, num_rows, num_cols) ! SS_matrix: each row is a bond, the two columns have the two residues which conformates it
   
@@ -141,7 +146,7 @@ program WSME_genTden_loopy
                                 !     O:
              &          e,Phi,natbase)
         !     natbase,phi (1,2,3)= completely native and unfolded baselines for FRT,H/RT,C/R
-        auxe=e
+        auxe=e !probably useless
 
 
         !loop to callculate the partition fuction and observables inside a folded island (loops influence)
@@ -159,14 +164,15 @@ program WSME_genTden_loopy
         ConRab_fixedconf=0._db
         EonRTabsquaredtot=0._db
         ConRab_fixedconftot=0._db
-
+        log_ZETA_aux=0._db
+        log_ZETA_abj=0._db
         do aaux=1,N
            do baux=aaux,N
               call calc_thermoab(aaux,baux-aaux+1,auxe,& !calculates the contributions of each (a->b) island of m=1,s=0 in a sea of m=1,s=1
                    &  logZetaaux,EonRTaux,EonRTsquaredaux,ConR_fixedconfaux,ConRaux,sigmaaux,sigmaiaux,fracfold,sigma_st_ab_aux,& !sigmaaux is <s>_(a,b). sigmai(aux) is <s_i>_ab = sum_(a,b) f^i_(a,b)*Z^(a,b) where f=1 if a in (a,b) and 0 if not
-                   &  sigma_st_ab_all_aux,parv(8)) ! <prod_k=s_t m_k sigma_k> for each (s,t) island (only a->b contribution)
+                   &  sigma_st_ab_all_aux,parv(8),log_ZETA_aux) ! <prod_k=s_t m_k sigma_k> for each (s,t) island (only a->b contribution)
                    
-!!$ !PIER: To build the pure WSME limit, without loops, comment lines below: from here...
+!!$           !PIER: To build the pure WSME limit, without loops, comment lines below: from here...
               logZetaab(aaux,baux)=logZetaaux
               EonRTab(aaux,baux)=EonRTaux
               EonRTabsquared(aaux,baux)=EonRTsquaredaux !PIER: added this  27/8/24
@@ -175,15 +181,34 @@ program WSME_genTden_loopy
               do k=1,N
                  sigmaiab(k,aaux,baux)=sigmaiaux(k)
               enddo
+
               do k=1,ST_length
                   sigma_st_ab_matrix(k,aaux,baux)=sigma_st_ab_aux(k) ! _aux is an array with ST_interval columns, and a value for one (a,b) interval for each (S,T)
               end do
+              
               do s_index=1,N
                do t_index=s_index,N
                      sigma_st_ab_all_matrix(s_index,t_index,aaux,baux)=sigma_st_ab_all_aux(s_index,t_index)
                enddo 
               enddo
-!!$              !...to here.
+
+              if(fold_profile) then
+               !save ZETA
+               do k=1,N
+                  log_ZETA_abj(aaux,baux,k)=log_ZETA_aux(k) !imagine log_ZETA_abj as a matrix, each row is an (a,b) island and j-th column is ZETA_j (Z_1^(ab), Z2, Z3... 0 0 0 0...0). There are a-b numbers /= 0, and index numbers are relative to "a" (Z1=Za, Z2=Z_a+1...)
+               enddo
+               do j=1,baux-aaux+1 !j goes from a to b. I'm substracting the offset (going from 1 to leng)
+                  do i=j,1,-1 !i goes from j to a (j, j-1, j-2...a)
+                     if (i==j) then
+                        folded_ab_ij_matrix(aaux,baux,i,j)=1-sigmaiab(j,aaux,baux) !remember sigmaiab is <sigma_k>^(a,b)
+                     else
+                        folded_ab_ij_matrix(aaux,baux,i,j)=exp(log_ZETA_abj(aaux,baux,i))*folded_ab_ij_matrix(aaux,baux,i+1,j)
+                     endif
+                  enddo
+               enddo
+              endif
+
+!!$        !...to here.
            enddo
         enddo
 
@@ -225,7 +250,7 @@ program WSME_genTden_loopy
         !notice calc_thermoab was in bucle of (a->b) while here the argument is just the number of residues N bc the bucle is within the subroutine
         call calc_thermo2(N, logZetaab, EonRTabtot,EonRTabsquaredtot, ConRab_fixedconftot, sigmaab,sigmaiab,sigma_st_ab_matrix,&
         &      sigma_st_ab_all_matrix, logZeta, EonRT, ConR,ConRfixave, Mavg, sigmaavg,fracfold,Mi,sigmai,Mij,sigmaij,&
-               sigma_st,sigma_st_all)
+               sigma_st,sigma_st_all,folded_ab_ij_matrix,folded_ab_matrix)
 
         !RESULTS:
 
@@ -299,6 +324,12 @@ program WSME_genTden_loopy
             write(73,*) T, fun_L
         endif
 
+        if(fold_profile) then ! <prod_k=i^j 1-sigma_k><prod m_k> for i,j in (a,b)
+            do i=1,N
+               write(47,*) folded_ab_matrix(i,:)
+            enddo
+        endif
+
         do i=1,N
            write(50,*) T, i, Mi(i),sigmai(i),(Mi(i)-sigmai(i)) ! magnetization for each residue
         enddo
@@ -316,8 +347,9 @@ program WSME_genTden_loopy
   if(wstr)   close (40)
   if(wProd_ms) close(70)
   if(f_L) close(73)
+  if(fold_profile) close(47)
   close (20)
-  close(50)  !PIER: added this two "close" 27/8/24
+  close(50) 
   close(60)
   close(94)
 
@@ -390,7 +422,7 @@ subroutine read_init(& !we call this routine at the very start of the main
   read(*,*) show_cmd_output
   read(*,*) constant_deltaT
   read(*,*) f_L
-  !     wstr=.true. -> calculate native strings, else skip
+  read(*,*) fold_profile
 
   pdb_code = cmapfile(1:4) !.map file is in format PDB.map, for example 1DPX.map. PDB has always 4 characters. Also, pdb_code is defined in moudle protdep_par
 
@@ -427,6 +459,7 @@ if (show_cmd_output) then
   write(*,*) "onlyC=",onlyC
   write(*,*) "Use disulfide bridges in the model: ",SS_flag
   write(*,*) "Calculate f(L) i.e. sumatory of all (s,t) islands: ", f_L
+  write(*,*) "Calculate fold profile: ", fold_profile
   write(*,*) '************************************************************************************'
 endif
   nct=0 !nº contactos ct

@@ -12,7 +12,8 @@ contains
   subroutine calc_thermo2(& 
        & leng,logZetaab,EonRTab,EonRTabsquared,ConRabfixed,sigmaab,sigmaiab,sigma_st_ab_matrix,sigma_st_ab_all_matrix, & 
                                 ! O:
-       & logZeta,EonRT,ConR,ConRfixed,Mavg,sigmaavg,fracfold,mi,sigmai,mij,sigmaij,sigma_st,sigma_st_all)   
+       & logZeta,EonRT,ConR,ConRfixed,Mavg,sigmaavg,fracfold,mi,sigmai,mij,sigmaij,sigma_st,sigma_st_all,&
+       & folded_ab_ij_matrix,folded_ab_matrix)   
     !     use defreal
     !     use phys_const
     !     use globalpar , only : wfoldfr
@@ -27,6 +28,7 @@ contains
     real(kind=db) :: sigma_st_ab_matrix(:,:,:),sigma_st(:), sigma_st_ab_all_matrix(:,:,:,:), sigma_st_all(:,:) 
 
     real(kind=db):: nu(1:leng,1:leng),F(0:leng)
+    real(kind=db):: folded_ab_ij_matrix(:,:,:,:),folded_ab_matrix(:,:)
 
     logical,parameter :: withmprof=.false.
 
@@ -41,8 +43,10 @@ contains
     sigmai=0.0_db
     sigma_st=0._db
     sigma_st_all=0._db
+    folded_ab_matrix=0._db
     call dati2(logZeta,EonRT,ConR,ConRfixed,Mavg,sigmaavg,mi,sigmai,mij,sigmaij,sigma_st,sigma_st_all,&
-         leng,logZetaab,EonRTab,EonRTabsquared,ConRabfixed,sigmaab,sigmaiab,sigma_st_ab_matrix,sigma_st_ab_all_matrix)
+         leng,logZetaab,EonRTab,EonRTabsquared,ConRabfixed,sigmaab,sigmaiab,sigma_st_ab_matrix,sigma_st_ab_all_matrix,&
+         folded_ab_ij_matrix,folded_ab_matrix)
     ! write(*,*) 'main:: structF/RT=' ,-logZeta
 
 !THE PROFILE PART BELOW WILL BE FIXED IN THE FUTURE:
@@ -64,7 +68,8 @@ contains
                                 !     O:
        & logZeta,EonRT,ConR,ConRfixed,M,sigma,mi,sigmai,mij,sigmaij,sigma_st, sigma_st_all, & 
                                 !     I:
-       &leng,logZetaab,EonRTab,EonRTabsquared,ConRabfixed,sigmaab,sigmaiab,sigma_st_ab_matrix,sigma_st_ab_all_matrix)
+       &leng,logZetaab,EonRTab,EonRTabsquared,ConRabfixed,sigmaab,sigmaiab,sigma_st_ab_matrix,sigma_st_ab_all_matrix,&
+       &folded_ab_ij_matrix,folded_ab_matrix)
     !   use defreal
     !   use protdep_par, only: N
     !   use globalpar
@@ -91,7 +96,7 @@ contains
     integer :: i,j,k,l,p,s,t
     real(kind=db):: H(leng,leng),O(leng,leng),A(leng+1),B(leng+1),C(leng+1),D(leng+1),E(leng+1),F(leng+1),Z,X,Y
     real(kind=db):: Zeta,O2(leng,leng),O3(leng,leng),B2(leng+1),X2,Zaux,logZetaaux
-
+    real(kind=db):: folded_ab_ij_matrix(:,:,:,:),folded_ab_matrix(:,:)
     H=1.0_db
     do j=1,leng
        do i=1,j
@@ -389,6 +394,46 @@ contains
 
     endif
 
+    if(fold_profile) then
+      do s=1,leng !think of (s,t) as (a,b)
+         do t=s,leng
+            F=0._db
+            A=0._db
+            A(1)=1.0_db
+   
+            do j=1,t-s+1
+               Z=1.0
+               do i=1,j
+                  Z=Z+H(i,j)*A(i)
+               enddo
+               Z=1.0_db/Z
+        
+               do i=1,j
+                  A(i)=Z*H(i,j)*A(i)
+               enddo
+               A(j+1)=Z
+   
+               do i=1,j 
+                  if (j/=1) then
+                     F(i)=Z*H(i,j)*F(i)+&
+                                        &A(i)*(folded_ab_ij_matrix(s,t,i,j)-folded_ab_ij_matrix(s,t,i,j-1)) 
+                  else
+                     F(i)=Z*H(i,j)*F(i)
+                  endif   
+               end do
+               F(j+1)=Z*folded_ab_matrix(s,t)
+   
+               folded_ab_matrix(s,t)=0.0_db
+               do i=1,j+1
+                  folded_ab_matrix(s,t)=folded_ab_matrix(s,t)+F(i)
+               enddo
+   
+            end do !j    
+
+         enddo
+      enddo
+ endif
+
     if(wProd_ms) then ! <prod_k=s^t m_k sigma_k>
       do p=1,ST_length
          s=S_interval(p)
@@ -410,7 +455,7 @@ contains
             A(j+1)=Z
 
             do i=1,j 
-               if (j/=1) then ! "j+1" bc it may be the case Sij=0 but Si,j-1 != 0, and we want to take this into account
+               if (j/=1) then 
                   F(i)=Z*H(i,j)*F(i)+&
                                      &A(i)*(sigma_st_ab_matrix(p,i,j)-sigma_st_ab_matrix(p,i,j-1)) 
                else
@@ -451,7 +496,7 @@ contains
                   A(j+1)=Z
       
                   do i=1,j 
-                     if (j/=1) then ! "j+1" bc it may be the case Sij=0 but Si,j-1 != 0, and we want to take this into account
+                     if (j/=1) then 
                         F(i)=Z*H(i,j)*F(i)+&
                                            &A(i)*(sigma_st_ab_all_matrix(s,t,i,j)-sigma_st_ab_all_matrix(s,t,i,j-1)) 
 

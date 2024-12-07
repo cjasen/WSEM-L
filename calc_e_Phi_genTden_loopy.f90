@@ -34,7 +34,9 @@ contains
     !     ee(2,i,j) = Kco*q(i)q(j)*(1/r(i,j)-kappa/2)*exp(-kappa*r(i,j))=> Contribución eléctrica a e(2,i,j)
     !     ee(3,i,j) = (Kco*q(i)q(j)*kappa*(3-kappa*r(i,j))/4T)*exp(-kappa*r(i,j))=> Contribución eléctrica a e(3,i,j)
     real(kind=db):: csi_nag,DeltaC,cmapd(N,N),ASAmap(N,N),DeltaS,epseff,Ionicforce,aonR,bonR,varCp,kappa,Kco 
+    real(kind=db) :: cmapd_copy(N,N), ASAmap_copy(N,N)
     real(kind=db):: w, lc, lp, d,pi
+    logical :: now_flip
     pi=3.141592653589793
     !Inicialización de arrays a 0
     e=0._db
@@ -45,6 +47,9 @@ contains
     !Mapas de contactos a utilizar
     cmapd=delta(1,:,:) !cmapd is the contact map calculated with cutoff distance
     ASAmap=delta(2,:,:) !ASAtotal map
+    cmapd_copy=cmapd
+    ASAmap_copy=ASAmap
+
 
     !Parámetros del modelo
     csi_nag=y(1) !eps in J/mol
