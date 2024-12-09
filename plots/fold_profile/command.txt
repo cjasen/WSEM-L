@@ -1,0 +1,1 @@
+magick -delay 20 -loop 0 Heatmaps/*.jpg heatmap_animation.gif
