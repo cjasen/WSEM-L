@@ -418,8 +418,13 @@ contains
                      F(i)=Z*H(i,j)*F(i)+&
                                         &A(i)*(folded_ab_ij_matrix(s,t,i,j)-folded_ab_ij_matrix(s,t,i,j-1)) 
                   else
-                     F(i)=Z*H(i,j)*F(i)
+                     F(i)=Z*H(i,j)*F(i) !There's only one case, and it's F(1)=0
                   endif   
+                  if(s==1 .and. t==1 .and. j<=2) write(*,*) "A(",i,",",j,")=",A(i)
+                  if(s==1 .and. t==1 .and. j<=2) write(*,*) "F(",i,",",j,")=",F(i)
+                  if(s==1 .and. t==1 .and. j<=2) write(*,*) &
+                  "Resta(",i,",",j,")=",(folded_ab_ij_matrix(s,t,i,j)-folded_ab_ij_matrix(s,t,i,j-1)) 
+                  if(s==1 .and. t==1 .and. j<=2) write(*,*)
                end do
                F(j+1)=Z*folded_ab_matrix(s,t)
    

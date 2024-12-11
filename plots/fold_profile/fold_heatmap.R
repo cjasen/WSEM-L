@@ -4,11 +4,19 @@ library(scales) # Para la notación científica en los ejes
 
 # Leer todas las matrices desde el archivo y separarlas en una lista
 read_matrices <- function(file_path, matrix_size) {
+  # Leer los datos como una matriz
   data <- as.matrix(read.table(file_path, header = FALSE))
+  
+  # Calcular el número de matrices
   num_matrices <- nrow(data) / matrix_size
+  
+  # Dividir los datos en matrices y ajustar los valores menores a 1e-20
   matrices <- lapply(1:num_matrices, function(i) {
-    data[((i - 1) * matrix_size + 1):(i * matrix_size), ]
+    mat <- data[((i - 1) * matrix_size + 1):(i * matrix_size), ]
+    mat[mat < 1e-20] <- 1e-20  # Evitar que la leyenda se vaya demasiado
+    return(mat)
   })
+  
   return(matrices)
 }
 
