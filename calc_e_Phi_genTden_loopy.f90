@@ -3,6 +3,7 @@ module calc_interact
   use phys_const
   use globalpar
   use protdep_par
+  use, intrinsic :: ieee_arithmetic
   implicit none
   private  ! All entities are now module-private by default
   public ::  calc_e_Phi 
@@ -120,19 +121,27 @@ contains
                      & - (1089.0_db * d**8 / (12800.0_db * lp**2 * lc**6))
 
                !e(4,i,j) = 1.5*log(4*pi*lp*lc/3) + 3*d**2/(4*lp*lc) - log(1.6-w) +1 ! +1 is for gyration radio
-               e(4,i,j) = 15
+
+               lc=(j-i+2)*3.8
+               lp=3.04
+               d=rCalpha(i-1,j+1)
+
+               call compute_Q_r(lp/lc,d/lc,e(4,i,j))
+               e(4,i,j)=-log(e(4,i,j))/7._db ! I divide by 7 to have reasonable numbers within the order of magnitude we are working
+               if(.not. ieee_is_finite(e(4, i, j))) e(4,i,j)=200._db
+
                endif
             else
             e(4,i,j)=200._db
           endif
-          if(isnan(e(4,i,j))) e(4,i,j)=e(4,i,j-1)
+          if(isnan(e(4,i,j))) e(4,i,j)=e(4,i,j-1) !!just for safety
        end do
     enddo
 
     !Disulfide bridge. As a covalent link, we overwrite the h_ij of two bridged residues with a very high value
     if (SS_flag) then
       do i=1,size(SS_matrix,1)
-            e(1,SS_matrix(i,1),SS_matrix(i,2)) = -700.0_db ! Without bridge, the orgiginal value is -0.5
+            e(1,SS_matrix(i,1),SS_matrix(i,2)) = -200.0_db ! Without bridge, the orgiginal value is -0.5
       end do
     endif 
 
@@ -148,6 +157,104 @@ contains
 
     return
   end subroutine calc_e_Phi
+
+  subroutine compute_Q_r(kappa, r, Q_r) ! Becker's entropy
+   use defreal
+   implicit none
+ 
+   ! Argumentos de entrada y salida
+   real(kind=db), intent(in) :: kappa, r
+   real(kind=db), intent(out) :: Q_r
+ 
+   ! Declaración de variables
+   real(kind=db) :: a, b, c, d, J_SYD, term1, term2, term3, term4
+   real(kind=db), dimension(2, 3) :: cij
+   integer :: i, j
+   real(kind=db), dimension(2) :: i_values
+   real(kind=db), dimension(3) :: j_values
+ 
+   ! Inicialización de constantes
+   a = 14.054_db
+   b = 0.473_db
+ 
+   c = 1.0_db - (1.0_db + (0.38_db * kappa**(-0.95_db))**(-5))**(-1.0_db / 5.0_db)
+ 
+   if (kappa < 1.0_db / 8.0_db) then
+     d = 0.0_db
+   else
+     d = 1.0_db / (0.177_db / (kappa - 0.111_db) + 6.40_db * (kappa - 0.111_db)**0.783_db)
+   end if
+ 
+   cij = reshape([ &
+     -3.0_db / 4.0_db, 23.0_db / 64.0_db, -7.0_db / 64.0_db, &
+     -1.0_db / 2.0_db, 17.0_db / 16.0_db, -9.0_db / 16.0_db], &
+     shape(cij), order=[1, 2])
+ 
+   if (kappa <= 1.0_db / 8.0_db) then
+     J_SYD = (3.0_db / 4.0_db * 3.141592653589793_db * kappa)**(3.0_db / 2.0_db) * (1.0_db - 5.0_db * kappa / 4.0_db)
+   else
+     J_SYD = 112.04_db * kappa**2 * exp(0.246_db / kappa - a * kappa)
+   end if
+ 
+   term1 = ((1.0_db - c * r**2) / (1.0_db - r**2))**(5.0_db / 2.0_db)
+ 
+   term2 = 0.0_db
+   i_values = [-1.0_db, 0.0_db]
+   j_values = [1.0_db, 2.0_db, 3.0_db]
+   
+   do i = 1, size(i_values)
+     do j = 1, size(j_values)
+       term2 = term2 + cij(i, j) * kappa**i_values(i) * r**(2.0_db * j_values(j))
+     end do
+   end do
+ 
+   term2 = exp(term2 / (1.0_db - r**2))
+ 
+   term3 = exp(-d * kappa * a * b * (1.0_db + b) * r**2 / (1.0_db - b**2 * r**2)) !this returns 1 most of the time
+   !call bessel_i0(-d * kappa * a * (1.0_db + b) * r / (1.0_db - b**2 * r**2), term4)
+ 
+   Q_r = J_SYD * term1 * term2 * term3 * 1 ! bessel function is always 1, but this code retunrs error sometimes
+ end subroutine compute_Q_r
+ 
+ subroutine bessel_i0(x, result)
+   implicit none
+ 
+   ! Argumentos de entrada y salida
+   real(8), intent(in) :: x
+   real(8), intent(out) :: result
+ 
+   ! Constantes
+   real(8), parameter :: eps = 1.0d-10  ! Tolerancia para la serie
+   real(8), parameter :: x_threshold = 3.75d0  ! Umbral para usar la serie o la aproximación asintótica
+   real(8) :: abs_x, y, t, sum, term
+   integer :: k
+ 
+   ! Valor absoluto de x
+   abs_x = abs(x)
+ 
+   if (abs_x <= x_threshold) then
+     ! Serie de potencias para valores pequeños de x
+     t = abs_x / x_threshold
+     t = t * t
+     sum = 1.0d0
+     term = 1.0d0
+     k = 1
+     do
+       term = term * (t / (4.0d0 * k * k))
+       sum = sum + term
+       if (term < eps) exit
+       k = k + 1
+     end do
+     result = sum
+   else
+     ! Aproximación asintótica para valores grandes de x
+     y = x_threshold / abs_x
+     result = exp(abs_x) / sqrt(abs_x) * (1.0d0 + y * (3.5156229d0 + y * (3.0899424d0 + y * (1.2067492d0 + &
+               y * (0.2659732d0 + y * (0.0360768d0 + y * 0.0045813d0))))))
+   end if
+ 
+ end subroutine bessel_i0
+
 ! !*********************************************
 ! function pol(v,x,deg)
 ! use defreal 
