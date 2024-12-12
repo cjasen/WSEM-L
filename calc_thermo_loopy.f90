@@ -418,7 +418,7 @@ contains
                      F(i)=Z*H(i,j)*F(i)+&
                                         &A(i)*(folded_ab_ij_matrix(s,t,i,j)-folded_ab_ij_matrix(s,t,i,j-1)) 
                   else
-                     F(i)=Z*H(i,j)*F(i) !There's only one case, and it's F(1)=0
+                     F(i)=Z*H(i,j)*F(i)
                   endif   
                end do
                F(j+1)=Z*folded_ab_matrix(s,t)

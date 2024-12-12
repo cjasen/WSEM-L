@@ -3,7 +3,6 @@ module calc_interact
   use phys_const
   use globalpar
   use protdep_par
-  use, intrinsic :: ieee_arithmetic
   implicit none
   private  ! All entities are now module-private by default
   public ::  calc_e_Phi 
@@ -123,25 +122,24 @@ contains
                !e(4,i,j) = 1.5*log(4*pi*lp*lc/3) + 3*d**2/(4*lp*lc) - log(1.6-w) +1 ! +1 is for gyration radio
 
                lc=(j-i+2)*3.8
-               lp=3.04
+               lp=0.204
                d=rCalpha(i-1,j+1)
 
-               call compute_Q_r(lp/lc,d/lc,e(4,i,j))
-               e(4,i,j)=-log(e(4,i,j))/7._db ! I divide by 7 to have reasonable numbers within the order of magnitude we are working
-               if(.not. ieee_is_finite(e(4, i, j))) e(4,i,j)=200._db
-
+               call compute_Q_r(lp/lc, d/lc, e(4,i,j))
+               e(4,i,j)=-log(e(4,i,j)) 
+               !if(.not. ieee_is_finite(e(4, i, j))) e(4,i,j)=200._db
                endif
             else
             e(4,i,j)=200._db
           endif
-          if(isnan(e(4,i,j))) e(4,i,j)=e(4,i,j-1) !!just for safety
+          if(isnan(e(4,i,j))) e(4,i,j)=e(4,i,j-1)
        end do
     enddo
 
     !Disulfide bridge. As a covalent link, we overwrite the h_ij of two bridged residues with a very high value
     if (SS_flag) then
       do i=1,size(SS_matrix,1)
-            e(1,SS_matrix(i,1),SS_matrix(i,2)) = -200.0_db ! Without bridge, the orgiginal value is -0.5
+            e(1,SS_matrix(i,1),SS_matrix(i,2)) = -700.0_db ! Without bridge, the orgiginal value is -0.5
       end do
     endif 
 
@@ -210,10 +208,10 @@ contains
  
    term2 = exp(term2 / (1.0_db - r**2))
  
-   term3 = exp(-d * kappa * a * b * (1.0_db + b) * r**2 / (1.0_db - b**2 * r**2)) !this returns 1 most of the time
-   !call bessel_i0(-d * kappa * a * (1.0_db + b) * r / (1.0_db - b**2 * r**2), term4)
+   term3 = exp(-d * kappa * a * b * (1.0_db + b) * r**2 / (1.0_db - b**2 * r**2))
+   call bessel_i0(-d * kappa * a * (1.0_db + b) * r / (1.0_db - b**2 * r**2), term4)
  
-   Q_r = J_SYD * term1 * term2 * term3 * 1 ! bessel function is always 1, but this code retunrs error sometimes
+   Q_r = J_SYD * term1 * term2 * term3 * term4
  end subroutine compute_Q_r
  
  subroutine bessel_i0(x, result)
