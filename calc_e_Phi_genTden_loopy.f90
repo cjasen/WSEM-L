@@ -122,7 +122,7 @@ contains
                !e(4,i,j) = 1.5*log(4*pi*lp*lc/3) + 3*d**2/(4*lp*lc) - log(1.6-w) +1 ! +1 is for gyration radio
 
                lc=(j-i+2)*3.8
-               lp=0.204
+               lp=0.05
                d=rCalpha(i-1,j+1)
 
                call compute_Q_r(lp/lc, d/lc, e(4,i,j))

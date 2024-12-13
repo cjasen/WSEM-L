@@ -52,7 +52,7 @@ end module phys_const
 
   integer:: nexp, eval
   real(kind=db), allocatable :: T_exp(:),C_exp(:) !an array to carry the experimental datapoints
-  real(kind=db):: y(7)
+  real(kind=db):: y(8)
   character(len=80):: expfile, simfile !the name of the .txt with the experimental datapoints and name of the .txt with the simulated data
 
 end module opt_aux

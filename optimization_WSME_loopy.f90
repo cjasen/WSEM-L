@@ -3,8 +3,8 @@ program optimization_WSME_loopy
     use opt_aux
     include 'nlopt.f'
     external dist
-    real (kind=db)::parv(7)
-    double precision d, params3(3), grad3(3),params5(5),grad5(5),minf_opt,eps,ds,dC,a,b !I don't use grad3 or grad5 for anything
+    real (kind=db)::parv(8)
+    double precision d, params3(3), grad3(3),params5(5),grad5(5),minf_opt,eps,ds,dC,a,b,gamma !I don't use grad3 or grad5 for anything
     !double precision eps_i,ds_i,dC_i
     integer :: npar, flaggrad, ires, maxeval
     integer*8 opt,l
@@ -16,7 +16,7 @@ program optimization_WSME_loopy
     read(*,*) flagpar
     read(*,*) expfile
     read(*,*) simfile
-    read(*,*) (parv(i),i=1,7)
+    read(*,*) (parv(i),i=1,8)
 
     allocate(T_exp(1:nexp),C_exp(1:nexp))
     open(2,file="Input/"//trim(expfile))
@@ -31,6 +31,7 @@ program optimization_WSME_loopy
     dC=parv(3)
     a=parv(6)
     b=parv(7)
+    gamma=parv(8)
 
     flaggrad = 0 !flaggrad=0 (para no usar gradiente)
     grad = 0._db
@@ -52,6 +53,7 @@ program optimization_WSME_loopy
         y(2)=parv(4) !I_solv
         y(3)=parv(6) !a
         y(4)=parv(7) !b
+        y(5)=parv(8) !gamma
         
         write(*,*) 'Optimizando eps,s,dC' 
 
@@ -76,7 +78,7 @@ program optimization_WSME_loopy
             write(*,*) 'Number of iterations= ', eval-1
             !write(20,*) minf_opt,minf_opt*sqrt(real(nexp)-1)/real(nexp) , eval-1, params3(1), params3(2), params3(3),&
             !            &" !minf_opt, adjusted minf_opt, nº of evalutions, parameters to optimize"
-            write(20,*) params3(1), params3(2),parv(3),parv(4), params3(3),parv(6),parv(7)," !all parameters in order"
+            write(20,*) params3(1), params3(2),parv(3),parv(4), params3(3),parv(6),parv(7),parv(8), " !all parameters in order"
             flush(20)
         endif
         call nlo_destroy(opt)
@@ -94,6 +96,7 @@ program optimization_WSME_loopy
         !parámetros que no se optimizan
         y(1)=parv(3) !epsilon_eff
         y(2)=parv(4) !I_solv
+        y(3)=parv(8)
 
         call dist(d,npar,params5) !calcula distancia entre curva experimental y teorica
         write(*,*) 'd_min, dolddef iniciales = ',d,d*sqrt(real(nexp)-1)/real(nexp) 
@@ -115,7 +118,7 @@ program optimization_WSME_loopy
            write(*,*) 'nº iteraciones = ', eval-1
            !write(20,*) minf_opt,minf_opt*sqrt(real(nexp)-1)/real(nexp) , eval-1, params5(1), params5(2), params4(3), params5(4), params5(5)&
            !            &" !minf_opt, adjusted minf_opt, nº of evalutions, parameters to optimize"
-           write(20,*) params5(1), params5(2), parv(3), parv(4), params5(3),params5(4),params5(5), " !all parameters in order"
+           write(20,*) params5(1), params5(2), parv(3), parv(4), params5(3),params5(4),params5(5),parv(8),"!all parameters in order"
            flush(20)
         endif
         call nlo_destroy(opt)
@@ -150,6 +153,7 @@ subroutine dist(d,npar,params)
         parv(5)= params(3) !deltaCp
         parv(6)= y(3) !a
         parv(7)= y(4) !b
+        parv(8)= y(5) !gamma
     endif
   
     if(npar==5) then
@@ -160,6 +164,7 @@ subroutine dist(d,npar,params)
         parv(5)= params(3) !deltaCp
         parv(6)= params(4) !a
         parv(7)= params(5) !b
+        parv(8)= y(3) !gamma
     endif
 
     !Generate input file for WSME_genTden_loopy
@@ -169,7 +174,7 @@ subroutine dist(d,npar,params)
     write(22,*) 128
     write(22,*) 1711
     write(22,*) 14400.0
-    write(22,*) (parv(i), i=1,7)
+    write(22,*) (parv(i), i=1,8)
     write(22,*) t_exp(1),",",t_exp(nexp),",",2,",",385 !2 is a random number, it is not used bc we don't use a constant deltaT. 385 is Tref
     write(22,*) nexp
     write(22,*) "0,0,1"
@@ -197,6 +202,7 @@ subroutine dist(d,npar,params)
     write(22,*) ".false." !if .false. removes output from WSME_genTden in CMD
     write(22,*) ".false." !if .false. WSME doesn't use a constant deltaT, it reads the experimental temperatures
     write(22,*) ".false." !if .false. it won't calculate f_L
+    write(22,*) ".false." !if .false. it won't calculate <prod 1-sigma>
 
 
     call system('WSME_genTden_loopy.exe < Input/opt_input_WSME.in')
