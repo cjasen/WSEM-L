@@ -416,7 +416,7 @@ contains
                do i=1,j 
                   if (j/=1) then
                      F(i)=Z*H(i,j)*F(i)+&
-                                        &A(i)*(folded_ab_ij_matrix(s,t,i,j)-folded_ab_ij_matrix(s,t,i,j-1)) 
+                                        &A(i)*(folded_ab_ij_matrix(i,j,s,t)-folded_ab_ij_matrix(i,j-1,s,t)) 
                   else
                      F(i)=Z*H(i,j)*F(i)
                   endif   

@@ -31,12 +31,12 @@ program WSME_genTden_loopy
   real(kind=db), allocatable ::              sigmaiaux(:)
   real(kind=db), allocatable :: sigma_st_ab_matrix(:,:,:), sigma_st_ab_aux(:), sigma_st(:)
   real(kind=db), allocatable :: sigma_st_ab_all_matrix(:,:,:,:), sigma_st_ab_all_aux(:,:), sigma_st_all(:,:) !first two dimensions are all possibilities of (s,t) intervals
-  real(kind=db), allocatable :: L(:),fun_L(:) !summatory on all (s,t) islands in function of L=1:N
+  real(kind=db), allocatable :: L(:),fun_L(:),sigma_nu(:,:) !summatory on all (s,t) islands in function of L=1:N
   real(kind=db):: ConRtest,ConRfixave !PIER: checks 27/8/24
 
   real(kind=db),allocatable :: deltaT_array(:), t_exp_aux(:), c_exp_aux(:) !used while optimization
 
-  real(kind=db), allocatable :: folded_ab_ij_matrix(:,:,:,:), folded_ab_matrix(:,:),&
+  real(kind=db), allocatable :: folded_ab_ij_matrix(:,:,:,:), folded_ab_matrix(:,:), fold_nu(:,:),&
                                 log_ZETA_aux(:),  log_ZETA_abj(:,:,:) !log_ZETA_abj is log of Z_{a,j}^{a,b}/Z_{a,j-1}^{a,b}
                                                          
   integer:: i,j,k,iM,l_index,q,s_index,t_index,g,aux2,aux3									 
@@ -64,7 +64,7 @@ program WSME_genTden_loopy
 
   allocate(sigma_st_ab_matrix(1:ST_length,1:N,1:N),sigma_st_ab_aux(1:ST_length),sigma_st(1:ST_length))
   allocate(sigma_st_ab_all_matrix(1:N,1:N,1:N,1:N), sigma_st_ab_all_aux(1:N,1:N), sigma_st_all(1:N,1:N))
-  allocate(L(1:N),fun_L(1:N))
+  allocate(L(1:N),fun_L(1:N),sigma_nu(N,N),fold_nu(N,N))
   allocate(t_exp_aux(1:nexp),c_exp_aux(1:nexp))
   allocate(folded_ab_ij_matrix(N,N,N,N),folded_ab_matrix(N,N),log_ZETA_aux(N),log_ZETA_abj(N,N,N))
 
@@ -101,8 +101,16 @@ program WSME_genTden_loopy
       open(70,file="Output/sigma_st.dat") !s t <prod_k=s^t m_k sigma_k>
       write(70,*) "#[Cden]    T   <prod_k=s^t m_k sigma_k> for all (s,t) intervals"
   end if
-  if(f_L) open(73,file="Output/f_L.txt") !f(L) = 1/(N-L+1) * sum_i^N-L+1 [ <prod_k=i^i+L-1 m_k sigma_k> ] 
-  if(fold_profile) open(47,file="Output/fold_profile.txt") !<prod 1-sigma><prod m>
+  if(f_L) then
+   open(73,file="Output/f_L.txt") !f(L) = 1/(N-L+1) * sum_i^N-L+1 [ <prod_k=i^i+L-1 m_k sigma_k> ] 
+   open(74,file="Output/sigma_profile.txt")
+   open(75,file="Output/sigma_profile cont.txt")
+  endif
+  if(fold_profile) then
+   open(47,file="Output/fold_profile.txt") !<prod 1-sigma><prod m>
+   open(48,file="Output/f_L fold.txt")
+   open(49,file="Output/fold_profile cont.txt")
+  endif
 
   ! Disulfide bridges
   call get_disulfide_bonds_matrix(pdb_code, SS_matrix, num_rows, num_cols) ! SS_matrix: each row is a bond, the two columns have the two residues which conformates it
@@ -326,13 +334,80 @@ program WSME_genTden_loopy
                fun_L(l_index)=fun_L(l_index)/(N-l_index+1) !normalization
             enddo
 
+            do i=1,N
+               do j=i,N
+                  if(i/=1 .and. j/=N) then
+                     sigma_nu(i,j)= &
+                     & ( sigma_st_all(i,j) - sigma_st_all(i,j+1) - &
+                     &   sigma_st_all(i-1,j) + sigma_st_all(i-1,j+1))
+                  endif
+                  if(i/=1 .and. j==N) then
+                     sigma_nu(i,j)=&
+                      & max( sigma_st_all(i,j) -  sigma_st_all(i-1,j),0.0_db) 
+                  endif
+                  if(i==1 .and. j/=N) then
+                     sigma_nu(i,j)=&
+                     & max(sigma_st_all(i,j) - sigma_st_all(i,j+1),0.0_db)
+                  endif
+                  if(i==1 .and. j==N) sigma_nu(i,j)=sigma_st_all(i,j)
+
+               enddo
+            enddo
             write(73,*) T, fun_L
+            do i=1,N
+               write(74,*) sigma_nu(i,:)
+               write(75,*) sigma_st_all(i,:)
+            enddo
         endif
 
-        if(fold_profile) then ! <prod_k=i^j 1-sigma_k><prod m_k> for i,j in (a,b)
-            do i=1,N
-               write(47,*) folded_ab_matrix(i,:)
+        if(fold_profile) then ! <prod_k=s^t (1-sigma_k)*m_k>
+         fun_L=0._db
+
+         do l_index=1,N
+            do i=1,N-l_index+1
+               j=i+l_index-1
+               if(i/=1 .and. j/=N) then
+                  fun_L(l_index)=fun_L(l_index)+&
+                  & ( folded_ab_matrix(i,j) - folded_ab_matrix(i,j+1) - &
+                  &   folded_ab_matrix(i-1,j) + folded_ab_matrix(i-1,j+1))
+               endif
+               if(i/=1 .and. j==N) then
+                  fun_L(l_index)=fun_L(l_index)+&
+                   & ( folded_ab_matrix(i,j) - folded_ab_matrix(i-1,j)) 
+               endif
+               if(i==1 .and. j/=N) then
+                  fun_L(l_index)=fun_L(l_index)+&! max(,0) to avoid case L=i=j=1, <ij> = 0 and <i,j+1> = 1
+                  & max(folded_ab_matrix(i,j) - folded_ab_matrix(i,j+1),0.0_db)
+               endif
+               if(i==1 .and. j==N) fun_L(l_index)=fun_L(l_index)+folded_ab_matrix(i,j)
+            enddo !i
+            fun_L(l_index)=fun_L(l_index)/(N-l_index+1) !normalization
+         enddo
+
+         do i=1,N
+            do j=i,N
+               if(i/=1 .and. j/=N) then
+                  fold_nu(i,j)= &
+                  & ( folded_ab_matrix(i,j) - folded_ab_matrix(i,j+1) - &
+                  &   folded_ab_matrix(i-1,j) + folded_ab_matrix(i-1,j+1))
+               endif
+               if(i/=1 .and. j==N) then
+                  fold_nu(i,j)=&
+                   folded_ab_matrix(i,j) -  folded_ab_matrix(i-1,j)
+               endif
+               if(i==1 .and. j/=N) then
+                  fold_nu(i,j)=&
+                  folded_ab_matrix(i,j) - folded_ab_matrix(i,j+1)
+               endif
+               if(i==1 .and. j==N) fold_nu(i,j)=folded_ab_matrix(i,j)
+
             enddo
+         enddo
+         write(48,*) T, fun_L
+         do i=1,N
+            write(47,*) fold_nu(i,:)
+            write(49,*) folded_ab_matrix(i,:)
+         enddo
         endif
 
         do i=1,N
@@ -351,8 +426,16 @@ program WSME_genTden_loopy
   if(wmprof) close (35)
   if(wstr)   close (40)
   if(wProd_ms) close(70)
-  if(f_L) close(73)
-  if(fold_profile) close(47)
+  if(f_L) then
+   close(73)
+   close(74)
+   close(75)
+  endif
+  if(fold_profile) then
+   close(47)
+   close(48)
+   close(49)
+  endif
   close (20)
   close(50) 
   close(60)

@@ -47,13 +47,14 @@ create_heatmap <- function(matrix_data, matrix_index, global_min, global_max) {
     labs(
       x = "Residue b",
       y = "Residue a",
-      fill = "Value (log10)",
-      title = paste("Heatmap of Matrix", sprintf("%02d", matrix_index))
+      #fill = "Value (log10)",
+      title = paste("T=", sprintf("%02d", matrix_index))
     ) +
     theme_minimal() +
     theme(
       axis.text.x = element_text(angle = 90, hjust = 1),
-      axis.text.y = element_text(size = 10)
+      axis.text.y = element_text(size = 10),
+      legend.position = "none" # Eliminar la leyenda
     )
   
   return(heatmap_plot)
@@ -70,13 +71,21 @@ matrices <- read_matrices(file_path, matrix_size)
 global_min <- min(sapply(matrices, function(x) min(x, na.rm = TRUE)))
 global_max <- max(sapply(matrices, function(x) max(x, na.rm = TRUE)))
 
+# Parámetros de temperatura inicial y delta
+T_inicial <- 50  
+delta <- 7      
+
 # Crear heatmaps para todas las matrices con la misma escala de colores
-for (i in seq_along(matrices)) {
-  heatmap <- create_heatmap(matrices[[i]], i, global_min, global_max)
+for (i in seq(length(matrices))) {
+  # Calcular la temperatura correspondiente
+  temperatura <- T_inicial + (i - 1) * delta
   
-  # Guardar cada heatmap como archivo con nombre de dos dígitos
+  # Crear el heatmap
+  heatmap <- create_heatmap(matrices[[i]], temperatura, global_min, global_max)
+  
+  # Guardar cada heatmap como archivo con nombre basado en la temperatura
   ggsave(
-    filename = sprintf("Heatmaps/heatmap_matrix_%02d.jpg", i),
+    filename = sprintf("Heatmaps/heatmap_matrix_%d.jpg", temperatura),
     plot = heatmap,
     width = 8,
     height = 6
