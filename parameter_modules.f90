@@ -50,10 +50,11 @@ end module phys_const
   implicit none
   save
 
-  integer:: nexp, eval
+  integer:: nexp, eval, N_res, N_elec, Mw_opt !some of this are parameters already defined, but I do it again to avoid problems
   real(kind=db), allocatable :: T_exp(:),C_exp(:) !an array to carry the experimental datapoints
   real(kind=db):: y(8)
   character(len=80):: expfile, simfile !the name of the .txt with the experimental datapoints and name of the .txt with the simulated data
+  character(len=4):: pdb_code_opt
 
 end module opt_aux
 

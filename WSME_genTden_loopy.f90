@@ -113,9 +113,7 @@ program WSME_genTden_loopy
   endif
 
   ! Disulfide bridges
-  call get_disulfide_bonds_matrix(pdb_code, SS_matrix, num_rows, num_cols) ! SS_matrix: each row is a bond, the two columns have the two residues which conformates it
-  
-  
+  if(SS_flag)  call get_disulfide_bonds_matrix(pdb_code, SS_matrix, num_rows, num_cols) ! SS_matrix: each row is a bond, the two columns have the two residues which conformates it
   
   allocate(auxe(4,1:N,0:N))
 
@@ -155,7 +153,6 @@ program WSME_genTden_loopy
              &          e,Phi,natbase)
         !     natbase,phi (1,2,3)= completely native and unfolded baselines for FRT,H/RT,C/R
         auxe=e !probably useless
-
 
         !loop to callculate the partition fuction and observables inside a folded island (loops influence)
         logZetaab=0._db
@@ -586,18 +583,19 @@ endif
   enddo
   close(31)
 
-  nASA=0 !nº contactos ASA
-  !Mapa solvatación
-  open(12,file="Input/" // trim(solvmapfile))
-3 read(12,*,end=4) i,j,s1,s2,s3,s4,s5,s6,s7,s8,s9,s10,s11,s12
-  !write(*,*) 's1, s9 =',s1,s9
-  !   if (i.le.j-2) then
-  if (i.le.j) then
-     delta(2,i,j) = s9
-     nASA = nASA + s9
-  endif
-  go to 3
-4 close(12)
+  !!nASA=0 !nº contactos ASA
+  !!!Mapa solvatación
+  !!open(12,file="Input/" // trim(solvmapfile))
+!!3 read(12,*,end=4) i,j,s1,s2,s3,s4,s5,s6,s7,s8,s9,s10,s11,s12
+  !!!write(*,*) 's1, s9 =',s1,s9
+  !!!   if (i.le.j-2) then
+  !!if (i.le.j) then
+  !!   delta(2,i,j) = s9
+   !!  nASA = nASA + s9
+  !!endif
+  !!go to 3
+!!4 close(12)
+close(12)
 
   select case (MapasContacto) !casos para los mapas de contacto. ct=ambos cutoff, ASA=ambos ASA, mix=VDW ct, solvatacion ASA
   case ('ct') 
@@ -606,6 +604,8 @@ endif
      delta(1,:,:)  = delta(2,:,:) 
   case ('mix') 
   end select
+
+
 
   return
 end subroutine read_init

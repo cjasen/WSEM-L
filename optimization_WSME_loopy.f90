@@ -1,3 +1,5 @@
+!!!!!! YOU HAVE TO CHANGE SOME VALUES AT THE PSEUDO-INPUT WRITER AT THE END OF THE CODE
+
 program optimization_WSME_loopy
     use defreal
     use opt_aux
@@ -11,15 +13,17 @@ program optimization_WSME_loopy
     REAL time_begin, time_end, tol1
     integer :: flagpar !nexp is the number of experimental points, flagpar a flag to indicate if optimice 3 parameters or 5 (+a and b)
 
-
     read(*,*) nexp
+    read(*,*) N_res
+    read(*,*) N_elec
+    read(*,*) Mw_opt
     read(*,*) flagpar
-    read(*,*) expfile
+    read(*,*) pdb_code_opt
     read(*,*) simfile
     read(*,*) (parv(i),i=1,8)
 
     allocate(T_exp(1:nexp),C_exp(1:nexp))
-    open(2,file="Input/"//trim(expfile))
+    open(2,file="Input/"//trim(pdb_code_opt)//trim("_expCp.txt"))
     do l=1,nexp
         read(2,*) T_exp(l),C_exp(l)
     enddo
@@ -171,9 +175,9 @@ subroutine dist(d,npar,params)
     open(22,file="Input/opt_input_WSME.in")
 
 
-    write(22,*) 128
-    write(22,*) 1711
-    write(22,*) 14400.0
+    write(22,*) N_res
+    write(22,*) N_elec
+    write(22,*) Mw_opt
     write(22,*) (parv(i), i=1,8)
     write(22,*) t_exp(1),",",t_exp(nexp),",",2,",",385 !2 is a random number, it is not used bc we don't use a constant deltaT. 385 is Tref
     write(22,*) nexp
@@ -181,11 +185,11 @@ subroutine dist(d,npar,params)
     write(22,*) 1 !number of (s,t) intervals
     write(22,*) 2
     write(22,*) 5 !i put this random numbers to avoid problems with input format
-    write(22,*) "rCalpha.txt"
-    write(22,*) "1DPX.map"
-    write(22,*) "1DPX_elec.map"
+    write(22,*) pdb_code_opt//trim("_rCalpha.txt")
+    write(22,*) pdb_code_opt//trim(".map")
+    write(22,*) pdb_code_opt//trim("_elec.map")
     write(22,*) "cmapASA_1dpxmod_uf_HP.dat"
-    write(22,*) "1DPX_expCp.txt"
+    write(22,*) pdb_code_opt//trim("_expCp.txt")
     write(22,*) "ct"
     write(22,*) ".false."
     write(22,*) ".true."
@@ -224,7 +228,7 @@ subroutine dist(d,npar,params)
     
     if(MOD(eval, 100) == 0) then
         open(65,file="Output/backsafe_param.txt")
-        write(65,*) (parv(i), i=1,7)
+        write(65,*) (parv(i), i=1,8)
     endif
 
     close(22)

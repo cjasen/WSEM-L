@@ -71,11 +71,12 @@ contains
       !v(i,j) are the electric contributions coded in elecmapfile (PDB_elec.map). v(i,1) and v(i,2) are the residues of interaction number "i", v(i,3) and v(i,4) have charges and v(i,5) has distances
        i=int(v(l,1))
        j=int(v(l,2))
+       !write(*,*) "line=",l, "i=",i, "v1=",v(l,1), "j=", j, "v2=", v(l,2)
        ee(1,i,j)= ee(1,i,j) + Kco*v(l,3)*v(l,4)*exp(-v(l,5)*kappa)/v(l,5)
        ee(2,i,j)= ee(2,i,j) + Kco*v(l,3)*v(l,4)*exp(-v(l,5)*kappa)*(1/v(l,5)-kappa/2)
        ee(3,i,j)= ee(3,i,j) + Kco*v(l,3)*v(l,4)*exp(-v(l,5)*kappa)*kappa*(3-kappa*v(l,5))/(4*T)
     enddo
-
+    
     !Hamiltoniano completo+contribuciones C dependiente de T. Bucle en residuos
     do i=1,N
        do j=i,N
@@ -122,7 +123,7 @@ contains
                !e(4,i,j) = 1.5*log(4*pi*lp*lc/3) + 3*d**2/(4*lp*lc) - log(1.6-w) +1 ! +1 is for gyration radio
 
                lc=(j-i+2)*3.8
-               lp=0.04
+               lp=6.84 ! 0.04 for 1dpx with 1 ss bond
                d=rCalpha(i-1,j+1)
 
                call compute_Q_r(lp/lc, d/lc, e(4,i,j))
