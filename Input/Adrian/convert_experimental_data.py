@@ -18,7 +18,7 @@ data["Cp_prime"] = data["Cp_kj"] + (a + b * data["T_K"]) * M  # Cp' = Cp + (a + 
 filtered_data = data.iloc[::5]  # Selecciona cada 4 filas
 
 # Seleccionar las columnas necesarias y guardar el nuevo archivo
-output_file = "1PHT_expCp.txt"
+output_file = "2PHT_expCp_noSS.txt"
 filtered_data[["T_K", "Cp_prime"]].to_csv(output_file, sep="\t", index=False, header=False)
 
 print(f"Datos convertidos guardados en: {output_file}")

@@ -2,7 +2,7 @@ from Bio.PDB import *
 import gemmi
 import numpy as np
 
-f_in = "1pht.pdb"  # .pdb es necesario descargarlo del PDB
+f_in = "2pht.pdb"  # .pdb es necesario descargarlo del PDB
 N = 87  # if .map is an empty file, add two more residues than it has
 
 pdb_code = f_in.split(".")[0].upper()
@@ -97,7 +97,7 @@ for i in range(len(calpha_positions) - 1):
             (calpha_positions[i][1] - calpha_positions[j][1]) ** 2 +
             (calpha_positions[i][2] - calpha_positions[j][2]) ** 2
         )
-        print(calpha_residues[i]-2, calpha_residues[j]-2, d, file=file3)
+        print(calpha_residues[i], calpha_residues[j], d, file=file3)
 
 # Bucle en átomos. Creamos el mapa electrostático considerando todos los contactos (i=j, i=j+1 incluidos)
 for i in range(Nat-1):
@@ -106,14 +106,14 @@ for i in range(Nat-1):
         if(d < r_cut):
             delta[residuo[i], residuo[j]] += 1
         if(carga[i] != 0 and carga[j] != 0):
-            print(int(residuo[i]-2), int(residuo[j]-2),
+            print(int(residuo[i]), int(residuo[j]),
                   carga[i], carga[j], d, file=file2)
 
 # Bucle en residuos. Mapa VdW: contactos i>j+2. Mapa solvatación: todos los contactos
 for i in range(1, N-2):
     for j in range(i+2, N):
         if (delta[i][j] != 0):
-            print(i-2, j-2, int(delta[i][j]), file=file)
+            print(i, j, int(delta[i][j]), file=file)
 
 # Cerrar los archivos
 file.close()

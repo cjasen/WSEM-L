@@ -1,0 +1,15 @@
+[{
+ "name": "1pht",
+ "modelSeeds": [
+  "1233822606"
+ ],
+ "sequences": [
+  {
+   "proteinChain": {
+    "sequence": "CEGYQYRALYDYKKEREEDIDLHLGDILTVNKGSLVALGFSDGQEARPEEIGWLNGYNETTGERGDFPGTYVEYIGRKKCSPP",
+    "count": 1
+   }
+  }
+ ]
+}
+]
