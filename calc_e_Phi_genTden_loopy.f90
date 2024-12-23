@@ -110,7 +110,7 @@ contains
 
                !Zhou's entropy:
                lc=(j-i+2)*3.8 !total lenght of the chain
-               lp=3.04 !persistence length in Amstrongs (Pablo used 20, but i have NaN)
+               lp=2.04 !persistence length in Amstrongs (Pablo used 20, but i have NaN)
                d=rCalpha(i-1,j+1) !I use "d" to mantain the notation of Zhou et all
                w = (5.0_db * lp / (4.0_db * lc)) - (2.0_db * d**2 / lc**2) &
                      & + (33.0_db * d**4 / (80.0_db * lp * lc**3)) &
@@ -123,7 +123,7 @@ contains
                !e(4,i,j) = 1.5*log(4*pi*lp*lc/3) + 3*d**2/(4*lp*lc) - log(1.6-w) +1 ! +1 is for gyration radio
 
                lc=(j-i+2)*3.8
-               lp=1.85 ! 0.04 for 1dpx with 1 ss bond
+               lp=1.4 ! 0.04 for 1dpx with 1 ss bond
                d=rCalpha(i-1,j+1)
 
                call compute_Q_r(lp/lc, d/lc, e(4,i,j))
@@ -131,7 +131,7 @@ contains
                !if(.not. ieee_is_finite(e(4, i, j))) e(4,i,j)=200._db
                endif
             else
-            e(4,i,j)=200._db
+            e(4,i,j)=60.0_db
           endif
           if(isnan(e(4,i,j))) e(4,i,j)=e(4,i,j-1)
        end do
@@ -151,7 +151,7 @@ contains
     Phi(2)=aonR*(T-T0C)/T+bonR*((T-T0C)**2)/(2.*T) !Enthalpy
     natbase(2)=natbase(2)+ Phi(2)
 
-    Phi(3)=aonR+bonR*(T-T0C) !Specific heat
+    Phi(3)=0!aonR+bonR*(T-T0C) !Specific heat
     natbase(3)=natbase(3)+ Phi(3)
 
     return
