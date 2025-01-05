@@ -19,13 +19,13 @@ graficar_todas_las_temperaturas <- function(datos) {
   
   # Crear el gráfico
   ggplot(datos_largos, aes(x = Indice, y = Valor, color = factor(Temperatura))) +
-    geom_line() +
-    scale_x_log10() +  # Escala logarítmica en el eje x
-    labs(x = "L", y = "f(L)", color = "T") +
+    geom_line(size = 1.2) +      # Ajusta el grosor de las líneas
+    scale_x_log10() +            # Escala logarítmica en el eje x
+    labs(x = "L", y = "f(L)", color = "T (K)") +
     theme_minimal()
 }
 
 # Ejemplo de uso
-ruta_archivo <- "f_L.txt"
+ruta_archivo <- "f_L fold.txt"
 datos <- leer_datos(ruta_archivo)
 graficar_todas_las_temperaturas(datos)

@@ -1,18 +1,20 @@
 83  !n of residues
 1431 !number of electrostatic contacts
 9630.0 !protein mass (g/mol)
--0.347     -0.163        29.0       5.0E-002  -2.067E-003   3.77E-003   5.51E-003   0.0      !contact eps  (KJ/mol),entropy of one residue q (KJ/K/mol), eps_eff, Isolv(M), deltaCp(KJ mol-1 K-1), a(KJ/molK), b(KJ/molK2), gamma (H_ll=-g H_nn)
-280, 420, 10,385 !280,380,0.05,385
+-6.603E-002  -2.802E-002   29.0       5.0E-002  -5.51E-004   1.57E-003   5.54E-003   0.05  !contact eps  (KJ/mol),entropy of one residue q (KJ/K/mol), eps_eff, Isolv(M), deltaCp(KJ mol-1 K-1), a(KJ/molK), b(KJ/molK2), gamma (H_ll=-g H_nn)
+310, 380, 3,385 !280,380,0.05,385
 20 !number of experimental datapoints for specific heat (only used while optimization, if you don't have data, just put any positive number
 0,0,1 !(en nuestro caso, 0,0,1 ; el valor diferente de 1 sirve para salir del bucle) 
-1	! the first number is the number of (S,T) intervals you want to calculate <prod_k=S^T m_k sigma_k>. Then it follows the values of S, and then those for T	
-10
-33	!! it ends here. If I put it all in the same line I have errors (thx Fortran!)
-2PHT_rCalpha.txt
-2PHT.map
-2PHT_elec.map
+2	! the first number is the number of (S,T) intervals you want to calculate <prod_k=S^T m_k sigma_k>. Then it follows the values of S, and then those for T	
+11
+19
+2
+8	!! it ends here. If I put it all in the same line I have errors (thx Fortran!)
+1PHT_rCalpha.txt
+1PHT.map
+1PHT_elec.map
 cmapASA_1dpxmod_uf_HP.dat ! this isn't used
-2PHT_expCp.txt
+1PHT_expCp.txt
 ct
 .true. !triggers the calculation of the average energy
 .true.    !triggers the calculation of the specific heat
@@ -25,7 +27,7 @@ ct
 .true. !triggers the calculation of the profile for folding probability of any island: <m_ij> and <m_ij sigma_ij> (LOOPY)
 .false. !triggers the calculation of <prod_k=S^T m_k sigma_k>
 .false. !if .true., changes all flags to calculate only the specific heat (used while doing optimization)
-.true. !if .true., the model will use disulfide bridges e(1,SS_matrix(i,1),SS_matrix(i,2)) = -120.0_db
+.false. !if .true., the model will use disulfide bridges e(1,SS_matrix(i,1),SS_matrix(i,2)) = -120.0_db
 .true. !if .false., removes the cmd output of WSME_genTden
 .true. !if .true., deltaT takes a constant value (the one given before). Used while optimization if experimental data hasn't a constant deltaT
 .false. !if .true., it calculates f(L) which implies the calculation of all <prod_k=s^t m_k sigma_k> islands

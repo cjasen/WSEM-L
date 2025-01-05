@@ -69,8 +69,8 @@ df <- data.frame(r = r_values, p = p_values)
 ggplot() +
   geom_line(data = df, aes(x = r, y = p), color = "blue", size = 1, linetype = "solid") +
   geom_point(data = zhou_data, aes(x = r, y = p_transformed), color = "red", size = 2) +
-  labs(title = "Comparación con Zhou 2001",
+  labs(
        x = "r",
-       y = "p(r)",
+       y = "p(r,lp)",
        color = "Datos") +
   theme_minimal()

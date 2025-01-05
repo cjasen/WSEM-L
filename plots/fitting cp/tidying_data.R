@@ -1,9 +1,9 @@
 # Lee el archivo "profthermo.dat"
-data <- read.table("profthermo.dat", header = FALSE)
+data <- read.table("profthermo_full.dat", header = FALSE)
 
 # Define las constantes conocidas
-a <- 1.575E-003  
-b <- 5.541E-003  
+a <- 0#1.575E-003  
+b <- 0#5.541E-003  
 M <- 14.400  
 
 # Extrae las columnas necesarias
@@ -11,7 +11,7 @@ T <- data$V2  # Columna 2 es T
 Cp_prime <- data$V8  # Columna 8 es Cp'
 
 # Calcula Cp utilizando la fórmula proporcionada
-Cp <- Cp_prime - (a + b * T) * M
+Cp <- Cp_prime - (a + b * T) * M +5
 
 # Reemplaza la columna Cp' con los nuevos valores de Cp
 data$V8 <- Cp

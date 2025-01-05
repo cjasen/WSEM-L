@@ -1,0 +1,42 @@
+
+
+*******************************************************************************
+Sat Jan 04 14:14:13 2025
+
+
+FIT:    data read from 'profthermo.dat' using 2:8
+        format = x:z
+        #datapoints = 27
+        residuals are weighted equally (unit weight)
+
+function used for fitting: Cp(x)
+	Cp(T) = a*exp( -(T-Tm)**2/(2*DeltaH**2) ) -  DeltaCp*(1/(1+exp(-(T-Tm)))) + b
+fitted parameters initialized with current variable values
+
+iter      chisq       delta/lim  lambda   DeltaCp       DeltaH        Tm            a             b            
+   0 8.4967122098e+02   0.00e+00  1.20e+02    1.000000e+00   1.000000e+01   3.300000e+02   2.000000e+01   3.000000e+00
+   7 3.3053021668e+00  -1.16e-01  1.20e-05   -3.752160e+00   5.086051e+00   3.315980e+02   2.165401e+01   1.656908e+00
+
+After 7 iterations the fit converged.
+final sum of squares of residuals : 3.3053
+rel. change during last iteration : -1.16309e-06
+
+degrees of freedom    (FIT_NDF)                        : 22
+rms of residuals      (FIT_STDFIT) = sqrt(WSSR/ndf)    : 0.387609
+variance of residuals (reduced chisquare) = WSSR/ndf   : 0.150241
+
+Final set of parameters            Asymptotic Standard Error
+=======================            ==========================
+DeltaCp         = -3.75216         +/- 0.2023       (5.39%)
+DeltaH          = 5.08605          +/- 0.07044      (1.385%)
+Tm              = 331.598          +/- 0.07907      (0.02384%)
+a               = 21.654           +/- 0.2429       (1.122%)
+b               = 1.65691          +/- 0.1391       (8.393%)
+
+correlation matrix of the fit parameters:
+                DeltaC DeltaH Tm     a      b      
+DeltaCp         1.000 
+DeltaH         -0.025  1.000 
+Tm              0.639 -0.092  1.000 
+a               0.174 -0.325  0.240  1.000 
+b               0.651 -0.396  0.424 -0.119  1.000 

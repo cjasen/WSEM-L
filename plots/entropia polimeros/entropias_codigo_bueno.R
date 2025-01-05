@@ -32,8 +32,8 @@ calc_S2 <- function(d, delta_ji) {
 calc_Q <- function(d, delta_ji) {
   a <- 14.054
   b <- 0.473
-  Lc <- (delta_ji + 2) * 3.8
-  kappa <- lp / Lc #lp here is not the same as in other functions
+  Lc <- (delta_ji +2) * 3.8
+  kappa <- 1.5 / Lc #lp here is not the same as in other functions
   c <- 1 - (1 + (0.38 * kappa^(-0.95))^-5)^(-1/5)
   d_val <- ifelse(kappa < 1/8, 0, 1 / (0.177 / (kappa - 0.111) + 6.40 * (kappa - 0.111)^0.783))
   
@@ -110,3 +110,39 @@ ggplot(data_long2, aes(x = delta_ji, y = S_value, color = factor(d), linetype = 
        color = "d/lc", 
        linetype = "S") +
   theme_minimal()
+
+
+######################################
+
+# Convertir los datos a formato largo y filtrar para uno
+data_long <- data %>%
+  gather(key = "S_type", value = "S_value", Ooka, Zhou, Becker) %>%
+  filter(S_type == "Becker")  # Filtrar solo los datos "Ooka"
+
+ggplot(data_long, aes(x = d, y = S_value, color = factor(delta_ji))) +
+  geom_line(size = 1.2) + 
+  labs( 
+       x = "r/lc", 
+       y = "S(r,lc)", 
+       color = "n") +
+  theme_minimal()
+
+
+# Convertir los datos a formato largo y filtrar para uno
+data_long2 <- data2 %>%
+  gather(key = "S_type", value = "S_value", Ooka, Zhou, Becker) %>%
+  filter(S_type == "Becker")  # Filtrar solo los datos "Ooka"
+
+
+ggplot(data_long2, aes(x = delta_ji, y = S_value, color = factor(d))) +
+  geom_line(size = 1.2) + 
+  labs( 
+       x = "n", 
+       y = "S(r,lc)", 
+       color = "r/lc") +
+  theme_minimal()
+
+
+
+
+

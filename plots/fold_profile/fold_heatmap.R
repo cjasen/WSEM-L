@@ -61,7 +61,7 @@ create_heatmap <- function(matrix_data, matrix_index, global_min, global_max) {
 }
 
 # Parámetros
-file_path <- "fold_profile.txt"
+file_path <- "sigma_profile.txt"
 matrix_size <- 83 # Dimensión de las matrices
 
 # Leer las matrices del archivo
@@ -72,8 +72,8 @@ global_min <- min(sapply(matrices, function(x) min(x, na.rm = TRUE)))
 global_max <- max(sapply(matrices, function(x) max(x, na.rm = TRUE)))
 
 # Parámetros de temperatura inicial y delta
-T_inicial <- 150  
-delta <- 3      
+T_inicial <- 100  
+delta <- 2    
 
 # Crear heatmaps para todas las matrices con la misma escala de colores
 for (i in seq(length(matrices))) {

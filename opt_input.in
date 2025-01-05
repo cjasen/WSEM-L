@@ -1,8 +1,8 @@
-28				!number of experimental datapoints
+31				!number of experimental datapoints
 83				!number of residues
 1431				!number of electrostatic contacts
 9630 				!protein mass (g/mol)
-3   				!flag to indicate which parameters we have to optimize: 5 := eps,s,dC,a,b and 3 := eps,s,dC | gamma is always fixed
-2PHT				!pdb
+5   				!flag to indicate which parameters we have to optimize: 5 := eps,s,dC,a,b and 3 := eps,s,dC | gamma is always fixed
+1PHT				!pdb
 simCp.txt			!file with simulated datapoints for specific heat
- -0.323      -0.151       29.0       5.0E-002  -1.881E-003   2.78E-003   6.51E-003   0.0  	!chi  dS   eps_eff  Isolv  dC  a  b gamma
+-6.603E-002  -2.802E-002   29.0       5.0E-002  -5.51E-004   1.57E-003   5.54E-003   0.05  	!chi  dS   eps_eff  Isolv  dC  a  b gamma
