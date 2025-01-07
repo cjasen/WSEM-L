@@ -44,10 +44,6 @@ module thermoab
         call datiab(log_ZETA,logZeta,EonRT,EonRTsquared,ConR_fixedconf,ConR,sigma,sigmai,sigma_st_ab,sigma_st_ab_all,&
         & econtrib,a_start,leng,gamma) !dati is the plural for data, as this calculates thermo data. Terrible name.
 
-        if(wfoldfr) then
-           call profiles(econtrib,withmprof,F,nu)
-           call calc_fracfold(F,fracfold)
-        endif
         return
       end subroutine calc_thermoab
 

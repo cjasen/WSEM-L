@@ -8,4 +8,4 @@ set xlabel 'T'
 set ylabel 'Cp'
 set grid
 set key outside
-plot 'profthermo.dat' using 2:8 with lines title 'Sim' linecolor rgb 'red' lw 2, "1PHT_expCp.txt" lc rgb "blue" title "Exp"
+plot 'profthermo.dat' using 2:8 with lines title 'Sim' linecolor rgb 'red' lw 2, "2PHT_expCp_noSS.txt" lc rgb "blue" title "Exp"

@@ -13,7 +13,7 @@ contains
        & leng,logZetaab,EonRTab,EonRTabsquared,ConRabfixed,sigmaab,sigmaiab,sigma_st_ab_matrix,sigma_st_ab_all_matrix, & 
                                 ! O:
        & logZeta,EonRT,ConR,ConRfixed,Mavg,sigmaavg,fracfold,mi,sigmai,mij,sigmaij,sigma_st,sigma_st_all,&
-       & folded_ab_ij_matrix,folded_ab_matrix)   
+       & folded_ab_ij_matrix,folded_ab_matrix,SS_matrix)   
     !     use defreal
     !     use phys_const
     !     use globalpar , only : wfoldfr
@@ -22,6 +22,7 @@ contains
   
     implicit none
     integer,intent(in) :: leng ! PIER: leng will be always N
+    integer:: SS_matrix(:,:)
 
     real(kind=db),intent(in)::logZetaab(:,:),EonRTab(:,:),EonRTabsquared(:,:),ConRabfixed(:,:),sigmaab(:,:),sigmaiab(:,:,:)
     real(kind=db),intent(out):: logZeta,EonRT,ConR,ConRfixed,Mavg,sigmaavg,fracfold,mi(:),sigmai(:),mij(:,:),sigmaij(:,:)
@@ -46,7 +47,7 @@ contains
     folded_ab_matrix=0._db
     call dati2(logZeta,EonRT,ConR,ConRfixed,Mavg,sigmaavg,mi,sigmai,mij,sigmaij,sigma_st,sigma_st_all,&
          leng,logZetaab,EonRTab,EonRTabsquared,ConRabfixed,sigmaab,sigmaiab,sigma_st_ab_matrix,sigma_st_ab_all_matrix,&
-         folded_ab_ij_matrix,folded_ab_matrix)
+         folded_ab_ij_matrix,folded_ab_matrix,SS_matrix)
     ! write(*,*) 'main:: structF/RT=' ,-logZeta
 
 !THE PROFILE PART BELOW WILL BE FIXED IN THE FUTURE:
@@ -69,13 +70,15 @@ contains
        & logZeta,EonRT,ConR,ConRfixed,M,sigma,mi,sigmai,mij,sigmaij,sigma_st, sigma_st_all, & 
                                 !     I:
        &leng,logZetaab,EonRTab,EonRTabsquared,ConRabfixed,sigmaab,sigmaiab,sigma_st_ab_matrix,sigma_st_ab_all_matrix,&
-       &folded_ab_ij_matrix,folded_ab_matrix)
+       &folded_ab_ij_matrix,folded_ab_matrix,SS_matrix)
     !   use defreal
     !   use protdep_par, only: N
     !   use globalpar
 
     implicit none
     integer,intent(in) :: leng ! PIER: leng =N in the relevant case
+    integer :: SS_matrix(:,:), ss_index, ss_a, ss_b
+    logical :: ss_ok_do_calculation
     real(kind=db),intent(in):: logZetaab(:,:),EonRTab(:,:),EonRTabsquared(:,:),ConRabfixed(:,:),sigmaab(:,:),sigmaiab(:,:,:),&
                                &    sigma_st_ab_matrix(:,:,:), sigma_st_ab_all_matrix(:,:,:,:)
     real(kind=db),intent(out):: logZeta,EonRT, ConR,ConRfixed, M, sigma,mi(:), sigmai(:),mij(:,:),sigmaij(:,:)

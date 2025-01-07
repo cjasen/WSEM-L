@@ -140,7 +140,7 @@ contains
     !Disulfide bridge. As a covalent link, we overwrite the h_ij of two bridged residues with a very high value
     if (SS_flag) then
       do i=1,size(SS_matrix,1)
-            e(1,SS_matrix(i,1),SS_matrix(i,2)) = -120.0_db ! Without bridge, the orgiginal value is -0.5
+            e(1,SS_matrix(i,1),SS_matrix(i,2)) = -500.0_db ! Without bridge, the orgiginal value is -0.5
       end do
     endif 
 
