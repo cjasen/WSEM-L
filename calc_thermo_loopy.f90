@@ -171,9 +171,9 @@ contains
     logZeta=0.0_db
     do j=1,leng
        Z=1.0_db
+       if(SS_flag .and. j>=SS_matrix(1,1) .and. j<=SS_matrix(1,2)) Z=0.0_db ! if j is in the SS-bridge, Z starts at 0
        do i=1,j
-          if(.not. SS_flag .or. .not. &
-          (SS_flag .and. i<SS_matrix(1,2) .and. j>SS_matrix(1,2))) Z=Z+H(i,j)*A(i) !disulfide bridge restrictions
+         if(SS_flag .and. (i<=SS_matrix(1,1) .or. i>SS_matrix(1,2))) Z=Z+H(i,j)*A(i) !if i is in the SS-bridge, it sums 0 (we skip that interaction)
        enddo
        
        logZeta=logZeta+log(Z)
@@ -193,7 +193,7 @@ contains
 
           X=0.0_db
           do i=1,j+1
-            if(.not. SS_flag .or. .not. (SS_flag .and. i<SS_matrix(1,2) .and. j>SS_matrix(1,2)))  X=X+B(i)
+            if(SS_flag .and. (i<=SS_matrix(1,1) .or. i>SS_matrix(1,2))) X=X+B(i)
           enddo
        endif
 
@@ -207,7 +207,7 @@ contains
 
           X2=0.0_db
           do i=1,j+1
-            if(.not. SS_flag .or. .not. (SS_flag .and. i<SS_matrix(1,2) .and. j>SS_matrix(1,2))) X2=X2+B2(i)
+            if(SS_flag .and. (i<=SS_matrix(1,1) .or. i>SS_matrix(1,2)))   X2=X2+B2(i)
           enddo
           !     endadded by pier
 
@@ -219,7 +219,7 @@ contains
 
           Y=0.0_db
           do i=1,j+1
-            if(.not. SS_flag .or. .not. (SS_flag .and. i<SS_matrix(1,2) .and. j>SS_matrix(1,2)))  Y=Y+C(i)
+            if(SS_flag .and. (i<=SS_matrix(1,1) .or. i>SS_matrix(1,2)))  Y=Y+C(i)
           enddo
        endif
 
@@ -232,7 +232,7 @@ contains
 
           M=0.0_db
           do i=1,j+1
-             M=M+D(i)
+            if(SS_flag .and. (i<=SS_matrix(1,1) .or. i>SS_matrix(1,2)))  M=M+D(i)
           enddo
 
           do i=1,j
@@ -243,7 +243,7 @@ contains
 
           sigma=0.0_db
           do i=1,j+1
-            if(.not. SS_flag .or. .not. (SS_flag .and. i<SS_matrix(1,2) .and. j>SS_matrix(1,2))) sigma=sigma+E(i)
+            if(SS_flag .and. (i<=SS_matrix(1,1) .or. i>SS_matrix(1,2)))  sigma=sigma+E(i)
           enddo
 
        endif
@@ -260,9 +260,9 @@ contains
           A(1)=1
           do j=1,leng
              Zaux=1.0_db
+             if(SS_flag .and. j>=SS_matrix(1,1) .and. j<=SS_matrix(1,2)) Zaux=0.0_db
              do i=1,j
-               if(.not. SS_flag .or. .not. &
-               (SS_flag .and. i<SS_matrix(1,2) .and. j>SS_matrix(1,2))) Zaux=Zaux+H(i,j)*A(i)
+               if(SS_flag .and. (i<=SS_matrix(1,1) .or. i>SS_matrix(1,2)))  Zaux=Zaux+H(i,j)*A(i)
              enddo
              Zaux=1.0_db/Zaux
 
@@ -283,8 +283,7 @@ contains
 
              Mi(k)=0.0_db
              do i=1,j+1
-               if(.not. SS_flag .or. .not. &
-               (SS_flag .and. i<SS_matrix(1,2) .and. j>SS_matrix(1,2))) Mi(k)=Mi(k)+D(i) ! <m_i>. Notice this calculation doesn't need any data from calc_thermo_ab, as it's independent of the existence of loops
+               if(SS_flag .and. (i<=SS_matrix(1,1) .or. i>SS_matrix(1,2)))  Mi(k)=Mi(k)+D(i) ! <m_i>. Notice this calculation doesn't need any data from calc_thermo_ab, as it's independent of the existence of loops
              enddo
 
              do i=1,j
@@ -301,8 +300,7 @@ contains
 
              sigmai(k)=0.0_db
              do i=1,j+1
-               if(.not. SS_flag .or. .not. &
-               (SS_flag .and. i<SS_matrix(1,2) .and. j>SS_matrix(1,2))) sigmai(k)=sigmai(k)+E(i)
+               if(SS_flag .and. (i<=SS_matrix(1,1) .or. i>SS_matrix(1,2)))  sigmai(k)=sigmai(k)+E(i)
              enddo
           enddo
        enddo
@@ -319,9 +317,9 @@ contains
              A(1)=1
              do j=1,leng
                 Zaux=1.0_db
+                if(SS_flag .and. j>=SS_matrix(1,1) .and. j<=SS_matrix(1,2)) Zaux=0.0_db
                 do i=1,j
-                  if(.not. SS_flag .or. .not. &
-                  (SS_flag .and. i<SS_matrix(1,2) .and. j>SS_matrix(1,2)))  Zaux=Zaux+H(i,j)*A(i)
+                  if(SS_flag .and. (i<=SS_matrix(1,1) .or. i>SS_matrix(1,2)))  Zaux=Zaux+H(i,j)*A(i)
                 enddo
                 Zaux=1.0_db/Zaux
 
@@ -342,7 +340,7 @@ contains
 
                 Mij(k,l)=0.0_db
                 do i=1,j+1
-                  if(.not. SS_flag .or. .not. (SS_flag .and. i<SS_matrix(1,2) .and. j>SS_matrix(1,2)))  Mij(k,l)=Mij(k,l)+D(i)
+                  if(SS_flag .and. (i<=SS_matrix(1,1) .or. i>SS_matrix(1,2)))  Mij(k,l)=Mij(k,l)+D(i)
                 enddo
 
 !CREO QUE LO DE ABAJO ESTA MAL, COMPROBAR... (o está bien pero calcula la media de las sigmas y no <prod m sigma>)
@@ -360,8 +358,7 @@ contains
 
                 sigmaij(k,l)=0.0_db
                 do i=1,j+1
-                  if(.not. SS_flag .or. .not. &
-                  (SS_flag .and. i<SS_matrix(1,2) .and. j>SS_matrix(1,2))) sigmaij(k,l)=sigmaij(k,l)+E(i)
+                  if(SS_flag .and. (i<=SS_matrix(1,1) .or. i>SS_matrix(1,2)))  sigmaij(k,l)=sigmaij(k,l)+E(i)
                 enddo
 
              enddo
@@ -388,9 +385,9 @@ contains
    
             do j=1,leng
                Z=1.0
+               if(SS_flag .and. j>=SS_matrix(1,1) .and. j<=SS_matrix(1,2)) Z=0.0_db
                do i=1,j
-                  if(.not. SS_flag .or. .not. &
-                   (SS_flag .and. i<SS_matrix(1,2) .and. j>SS_matrix(1,2))) Z=Z+H(i,j)*A(i)
+                  if(SS_flag .and. (i<=SS_matrix(1,1) .or. i>SS_matrix(1,2)))  Z=Z+H(i,j)*A(i)
                enddo
                Z=1.0_db/Z
         
@@ -411,8 +408,7 @@ contains
    
                folded_ab_matrix(s,t)=0.0_db
                do i=1,j+1
-                  if(.not. SS_flag .or. .not. &
-                  (SS_flag .and. i<SS_matrix(1,2) .and. j>SS_matrix(1,2)))  folded_ab_matrix(s,t)=folded_ab_matrix(s,t)+F(i)
+                  if(SS_flag .and. (i<=SS_matrix(1,1) .or. i>SS_matrix(1,2)))  folded_ab_matrix(s,t)=folded_ab_matrix(s,t)+F(i)
                enddo
    
             end do !j    
@@ -431,8 +427,9 @@ contains
 
          do j=1,leng
             Z=1.0
+            if(SS_flag .and. j>=SS_matrix(1,1) .and. j<=SS_matrix(1,2)) Z=0.0_db
             do i=1,j
-               if(.not. SS_flag .or. .not. (SS_flag .and. i<SS_matrix(1,2) .and. j>SS_matrix(1,2)))  Z=Z+H(i,j)*A(i)
+               if(SS_flag .and. (i<=SS_matrix(1,1) .or. i>SS_matrix(1,2)))   Z=Z+H(i,j)*A(i)
             enddo
             Z=1.0_db/Z
      
@@ -453,8 +450,7 @@ contains
 
             sigma_st(p)=0.0_db
             do i=1,j+1
-               if(.not. SS_flag .or. .not. &
-               (SS_flag .and. i<SS_matrix(1,2) .and. j>SS_matrix(1,2)))  sigma_st(p)=sigma_st(p)+F(i)
+               if(SS_flag .and. (i<=SS_matrix(1,1) .or. i>SS_matrix(1,2)))  sigma_st(p)=sigma_st(p)+F(i)
             enddo
 
             !sigma_st(p)=sigma_st(p)/(t-s+1) !normalization
@@ -473,9 +469,9 @@ contains
       
                do j=1,leng
                   Z=1.0
+                  if(SS_flag .and. j>=SS_matrix(1,1) .and. j<=SS_matrix(1,2)) Z=0.0_db
                   do i=1,j
-                     if(.not. SS_flag .or. .not. &
-                     (SS_flag .and. i<SS_matrix(1,2) .and. j>SS_matrix(1,2)))  Z=Z+H(i,j)*A(i)
+                     if(SS_flag .and. (i<=SS_matrix(1,1) .or. i>SS_matrix(1,2)))  Z=Z+H(i,j)*A(i)
                   enddo
                   Z=1.0_db/Z
            
@@ -497,8 +493,7 @@ contains
       
                   sigma_st_all(s,t)=0.0_db
                   do i=1,j+1
-                     if(.not. SS_flag .or. .not. &
-                     (SS_flag .and. i<SS_matrix(1,2) .and. j>SS_matrix(1,2)))   sigma_st_all(s,t)=sigma_st_all(s,t)+F(i)
+                     if(SS_flag .and. (i<=SS_matrix(1,1) .or. i>SS_matrix(1,2)))  sigma_st_all(s,t)=sigma_st_all(s,t)+F(i)
                   enddo
                   !sigma_st_all(s,t)=sigma_st_all(s,t)/(t-s+1) !normalization
       
