@@ -1,15 +1,15 @@
 83  !n of residues
 1431 !number of electrostatic contacts
 9630.0 !protein mass (g/mol)
--6.339E-002  -2.64E-002   29.0    5.03E-002  -5.83E-004   1.57E-003   5.53E-003   0.05  !contact eps  (KJ/mol),entropy of one residue q (KJ/K/mol), eps_eff, Isolv(M), deltaCp(KJ mol-1 K-1), a(KJ/molK), b(KJ/molK2), gamma (H_ll=-g H_nn)
-300, 365, 2,385 !280,380,0.05,385
+-6.603E-002  -2.802E-002   29.0       5.0E-002  -5.51E-004   1.57E-003   5.54E-003   0.05  !contact eps  (KJ/mol),entropy of one residue q (KJ/K/mol), eps_eff, Isolv(M), deltaCp(KJ mol-1 K-1), a(KJ/molK), b(KJ/molK2), gamma (H_ll=-g H_nn)
+290, 381, 10,385 !280,380,0.05,385
 20 !number of experimental datapoints for specific heat (only used while optimization, if you don't have data, just put any positive number
 0,0,1 !(en nuestro caso, 0,0,1 ; el valor diferente de 1 sirve para salir del bucle) 
 2	! the first number is the number of (S,T) intervals you want to calculate <prod_k=S^T m_k sigma_k>. Then it follows the values of S, and then those for T	
-53
-9
-58
-14 !! it ends here. If I put it all in the same line I have errors (thx Fortran!)
+65
+11
+81
+27 !! it ends here. If I put it all in the same line I have errors (thx Fortran!)
 2PHT_rCalpha.txt
 2PHT.map
 2PHT_elec.map
@@ -27,7 +27,7 @@ ct
 .true. !triggers the calculation of the profile for folding probability of any island: <m_ij> and <m_ij sigma_ij> (LOOPY)
 .true !triggers the calculation of <prod_k=S^T m_k sigma_k>
 .false. !if .true., changes all flags to calculate only the specific heat (used while doing optimization)
-.false. !if .true., the model will use disulfide bridges e(1,SS_matrix(i,1),SS_matrix(i,2)) = -120.0_db
+.true. !if .true., the model will use disulfide bridges e(1,SS_matrix(i,1),SS_matrix(i,2)) = -120.0_db
 .true. !if .false., removes the cmd output of WSME_genTden
 .true. !if .true., deltaT takes a constant value (the one given before). Used while optimization if experimental data hasn't a constant deltaT
 .false. !if .true., it calculates f(L) which implies the calculation of all <prod_k=s^t m_k sigma_k> islands

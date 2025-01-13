@@ -48,20 +48,20 @@ create_heatmap <- function(matrix_data, matrix_index, global_min, global_max) {
       x = "Residue b",
       y = "Residue a",
       #fill = "Value (log10)",
-      title = paste("T=", sprintf("%02d", matrix_index))
+      title = paste("T=", sprintf("%02d", matrix_index),"K")
     ) +
     theme_minimal() +
     theme(
       axis.text.x = element_text(angle = 90, hjust = 1),
       axis.text.y = element_text(size = 10),
-      legend.position = "none" # Eliminar la leyenda
+      #legend.position = "none" # Eliminar la leyenda
     )
   
   return(heatmap_plot)
 }
 
 # Parámetros
-file_path <- "sigma_profile.txt"
+file_path <- "fold_profile.txt"
 matrix_size <- 83 # Dimensión de las matrices
 
 # Leer las matrices del archivo
@@ -72,8 +72,8 @@ global_min <- min(sapply(matrices, function(x) min(x, na.rm = TRUE)))
 global_max <- max(sapply(matrices, function(x) max(x, na.rm = TRUE)))
 
 # Parámetros de temperatura inicial y delta
-T_inicial <- 100  
-delta <- 2    
+T_inicial <- 280  
+delta <- 30    
 
 # Crear heatmaps para todas las matrices con la misma escala de colores
 for (i in seq(length(matrices))) {
@@ -85,7 +85,7 @@ for (i in seq(length(matrices))) {
   
   # Guardar cada heatmap como archivo con nombre basado en la temperatura
   ggsave(
-    filename = sprintf("Heatmaps/heatmap_matrix_%d.jpg", temperatura),
+    filename = sprintf("Heatmaps/1pht_native_%d.jpg", temperatura),
     plot = heatmap,
     width = 8,
     height = 6

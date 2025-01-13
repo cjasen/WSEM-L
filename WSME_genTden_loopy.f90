@@ -178,10 +178,13 @@ program WSME_genTden_loopy
          do aaux=1,N
             do baux=aaux,N
 
+               if((.not. SS_flag) .or. (SS_flag .and. aaux/=SS_matrix(1,1) .and. &
+                  aaux/=SS_matrix(1,2) .and. baux/=SS_matrix(1,1) .and. baux/=SS_matrix(1,2) )) then ! THIS ONLY WORKS FOR 1 SS BRIDGE!!!!!!!!!!!!!!!!!!!
+
                   call calc_thermoab(aaux,baux-aaux+1,auxe,& !calculates the contributions of each (a->b) island of m=1,s=0 in a sea of m=1,s=1
                         logZetaaux,EonRTaux,EonRTsquaredaux,ConR_fixedconfaux,ConRaux,sigmaaux,sigmaiaux,fracfold,&
                         sigma_st_ab_aux,& !sigmaaux is <s>_(a,b). sigmai(aux) is <s_i>_ab = sum_(a,b) f^i_(a,b)*Z^(a,b) where f=1 if a in (a,b) and 0 if not
-                        sigma_st_ab_all_aux,parv(8),log_ZETA_aux) ! <prod_k=s_t m_k sigma_k> for each (s,t) island (only a->b contribution)
+                        sigma_st_ab_all_aux,parv(8),log_ZETA_aux,SS_matrix) ! <prod_k=s_t m_k sigma_k> for each (s,t) island (only a->b contribution)
                         
       !!$           !PIER: To build the pure WSME limit, without loops, comment lines below: from here...
                   logZetaab(aaux,baux)=logZetaaux
@@ -222,9 +225,9 @@ program WSME_genTden_loopy
                      enddo
                   endif
    !!$        !...to here.
+               endif !SS_flag
             enddo
          enddo
-
          !we have to add the off-set of the all-native case:
          !Hn is betaH^nn
          Hn=0.0_db
@@ -264,7 +267,6 @@ program WSME_genTden_loopy
         call calc_thermo2(N, logZetaab, EonRTabtot,EonRTabsquaredtot, ConRab_fixedconftot, sigmaab,sigmaiab,sigma_st_ab_matrix,&
         &      sigma_st_ab_all_matrix, logZeta, EonRT, ConR,ConRfixave, Mavg, sigmaavg,fracfold,Mi,sigmai,Mij,sigmaij,&
                sigma_st,sigma_st_all,folded_ab_ij_matrix,folded_ab_matrix,SS_matrix)
-
         !RESULTS:
 
         FreeonRT=-logZeta+Phi(1)
