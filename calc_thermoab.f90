@@ -167,7 +167,7 @@ module thermoab
 
       do j=1,leng
          i_start=1
-         if(SS_flag .and. (SS_matrix(1,2)<j+offset)) i_start=SS_matrix(1,2)-offset+1 !if there's a Cysteine with SS-bridge between a and j, then start the calculation after the Cysteine, which breaks the loopy chain
+         if(SS_flag .and. (SS_matrix(1,2)<j+offset)) i_start=max(SS_matrix(1,2)-offset+1,1) !if there's a Cysteine with SS-bridge between a and j, then start the calculation after the Cysteine, which breaks the loopy chain
          Z=1.0_db
          do i=i_start,j
             Z=Z+H(i,j)*A(i) ! Notes' nomenclature: xi_j = 1 + sum_i A_i^(j-1)*w_ij, here Z=xi and H(i,j)=w_ij
@@ -176,7 +176,7 @@ module thermoab
          logZeta=logZeta+log(Z)
          Z=1.0_db/Z
          log_ZETA(j)=log(Z) !save Z. We only use this if we want to calculate <prod_k=i^j (1-sigma_k)><prod_k m_k>
-         do i=1,j
+         do i=1,j !notice here we start on i=1, not i=i_start
             A(i)=Z*H(i,j)*A(i) ! A_i^j = A_i^(j-1)*w_ij/xi_j for i<=j
          enddo
          A(j+1)=Z ! for A_(j+1)^j = 1/xi_j (now, Z=1/xi_j)
@@ -246,7 +246,7 @@ module thermoab
             ! This section is quite inefficient because we do the same calculations in the previous and in the next section.
             do j=1,leng
                i_start=1
-               if(SS_flag .and. (SS_matrix(1,2)<j+offset)) i_start=SS_matrix(1,2)-offset+1
+               if(SS_flag .and. (SS_matrix(1,2)<j+offset)) i_start=max(SS_matrix(1,2)-offset+1,1) 
 
                Zaux=1.0_db
                do i=i_start,j
@@ -288,7 +288,7 @@ module thermoab
    
                do j=1,leng
                   i_start=1
-                  if(SS_flag .and. (SS_matrix(1,2)<j+offset)) i_start=SS_matrix(1,2)-offset+1
+                  if(SS_flag .and. (SS_matrix(1,2)<j+offset)) i_start=max(SS_matrix(1,2)-offset+1,1) 
 
                   Zaux=1.0_db
                   do i=i_start,j
@@ -328,12 +328,11 @@ module thermoab
             A(1)=1.0_db
             do j=1,leng
                i_start=1
-               if(SS_flag .and. (SS_matrix(1,2)<j+offset)) i_start=SS_matrix(1,2)-offset+1
+               if(SS_flag .and. (SS_matrix(1,2)<j+offset)) i_start=max(SS_matrix(1,2)-offset+1,1) 
 
                Zaux=1.0_db
                do i=i_start,j
                   Zaux=Zaux+H(i,j)*A(i)
-                  !write(*,*) i,j,Z
                enddo
                Zaux=1.0_db/Zaux
 

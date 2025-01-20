@@ -114,7 +114,7 @@ program WSME_genTden_loopy
   endif
 
   ! Disulfide bridges
-  if(SS_flag)  call get_disulfide_bonds_matrix(pdb_code, SS_matrix, num_rows, num_cols) ! SS_matrix: each row is a bond, the two columns have the two residues which conformates it
+  if(SS_breakable .or. SS_flag)  call get_disulfide_bonds_matrix(pdb_code, SS_matrix, num_rows, num_cols) ! SS_matrix: each row is a bond, the two columns have the two residues which conformates it
   
   allocate(auxe(4,1:N,0:N))
 
@@ -228,6 +228,8 @@ program WSME_genTden_loopy
                endif !SS_flag
             enddo
          enddo
+
+
          !we have to add the off-set of the all-native case:
          !Hn is betaH^nn
          Hn=0.0_db
@@ -276,8 +278,7 @@ program WSME_genTden_loopy
         write(20,*) cden,T,(Mavg-Minf)/(M0-Minf),sigmaavg,&
              &       R*T*FreeonRT,R*T*EnthonRT,R*(EnthonRT-FreeonRT),R*ConR,R*Phi(3),R*natbase(3)
 
-        write(94,*)R*ConR ! specific heat
-
+        write(94,*) R*ConR ! specific heat
         if (wstr) then
            call stringhe(m,S,e,N)
            do i=1,N
@@ -491,6 +492,7 @@ subroutine read_init(& !we call this routine at the very start of the main
   read(*,*) wProd_ms
   read(*,*) onlyC
   read(*,*) SS_flag
+  read(*,*) SS_breakable
   read(*,*) show_cmd_output
   read(*,*) constant_deltaT
   read(*,*) f_L
@@ -529,7 +531,7 @@ if (show_cmd_output) then
   write (*,*) "Case for map using: ",MapasContacto
   write(*,*) "wEave,wC,wMave,wfoldfr,wstr,wFprof,wmprof,wMres,wMisland",wEave,wC,wMave,wfoldfr,wstr,wFprof,wmprof,wMres,wMisland
   write(*,*) "onlyC=",onlyC
-  write(*,*) "Use disulfide bridges in the model: ",SS_flag
+  write(*,*) "Use disulfide bridges at Z level: ",SS_flag
   write(*,*) "Calculate f(L) i.e. sumatory of all (s,t) islands: ", f_L
   write(*,*) "Calculate fold profile: ", fold_profile
   write(*,*) '************************************************************************************'
