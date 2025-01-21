@@ -136,7 +136,6 @@ program WSME_genTden_loopy
       Tmax=t_exp_aux(size(t_exp_aux))
   endif 
 
-
   cden=cdenmin ! concentration of denaturant. We only use 0
   do while (cden.le.cdenmax)
      q=1 
@@ -174,12 +173,8 @@ program WSME_genTden_loopy
         log_ZETA_abj=0._db
         folded_ab_ij_matrix=0._db
         folded_ab_matrix=0._db
-
          do aaux=1,N
             do baux=aaux,N
-
-               if((.not. SS_flag) .or. (SS_flag .and. aaux/=SS_matrix(1,1) .and. &
-                  aaux/=SS_matrix(1,2) .and. baux/=SS_matrix(1,1) .and. baux/=SS_matrix(1,2) )) then ! THIS ONLY WORKS FOR 1 SS BRIDGE!!!!!!!!!!!!!!!!!!!
 
                   call calc_thermoab(aaux,baux-aaux+1,auxe,& !calculates the contributions of each (a->b) island of m=1,s=0 in a sea of m=1,s=1
                         logZetaaux,EonRTaux,EonRTsquaredaux,ConR_fixedconfaux,ConRaux,sigmaaux,sigmaiaux,fracfold,&
@@ -225,7 +220,6 @@ program WSME_genTden_loopy
                      enddo
                   endif
    !!$        !...to here.
-               endif !SS_flag
             enddo
          enddo
 

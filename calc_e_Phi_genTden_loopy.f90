@@ -140,7 +140,7 @@ contains
     !Disulfide bridge. As a covalent link, we overwrite the h_ij of two bridged residues with a very high value
     if (SS_breakable) then
       do i=1,size(SS_matrix,1)
-            !e(1,SS_matrix(i,1),SS_matrix(i,2)) = -20.0_db ! Without bridge, the orgiginal value is -0.5
+            e(1,SS_matrix(i,1),SS_matrix(i,2)) = -10.0_db ! Without bridge, the orgiginal value is -0.5
       end do
     endif 
 
@@ -151,7 +151,7 @@ contains
     Phi(2)=aonR*(T-T0C)/T+bonR*((T-T0C)**2)/(2.*T) !Enthalpy
     natbase(2)=natbase(2)+ Phi(2)
 
-    Phi(3)=aonR+bonR*(T-T0C) !Specific heat
+    Phi(3)=0!aonR+bonR*(T-T0C) !Specific heat
     natbase(3)=natbase(3)+ Phi(3)
 
     return
