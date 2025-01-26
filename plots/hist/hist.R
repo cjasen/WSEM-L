@@ -1,0 +1,106 @@
+# Cargar paquetes necesarios
+library(dplyr)
+library(ggplot2)
+
+# Leer los archivos
+file1 <- "1PHT.map"
+file2 <- "2PHT.map"
+
+data1 <- read.table(file1, header = FALSE, col.names = c("i", "j", "n"))
+data2 <- read.table(file2, header = FALSE, col.names = c("i", "j", "n"))
+
+# Crear un marco de datos con todos los pares posibles (i, j) con i < j
+all_pairs <- expand.grid(i = 1:83, j = 1:83) %>%
+  filter(i < j)
+
+# Completar los datos con los pares faltantes y asumir n = 0
+data1_full <- all_pairs %>%
+  left_join(data1, by = c("i", "j")) %>%
+  mutate(n = ifelse(is.na(n), 0, n))
+
+data2_full <- all_pairs %>%
+  left_join(data2, by = c("i", "j")) %>%
+  mutate(n = ifelse(is.na(n), 0, n))
+
+# Calcular las diferencias en n
+differences <- data1_full$n - data2_full$n
+
+# Crear un marco de datos para filtrar y colorear los bins
+diff_data <- data.frame(differences = differences) %>%
+  filter(differences != 0) %>% # Eliminar el bin correspondiente a 0
+  mutate(color = ifelse(differences < 0, "negative", "positive"))
+
+# Crear el histograma
+ggplot(diff_data, aes(x = differences, fill = color)) +
+  geom_histogram(
+    binwidth = 1, 
+    color = "black", 
+    alpha = 0.7, 
+    show.legend = FALSE
+  ) +
+  scale_fill_manual(values = c("negative" = "red", "positive" = "blue")) +
+  labs(
+    x = "Difference in number of contacts",
+    y = "Frecuency"
+  ) +
+  theme_minimal()
+
+data1$source <- "Wild type"
+data2$source <- "Mutant"
+combined_data <- rbind(data1, data2)
+
+# Graficar
+ggplot(combined_data, aes(x = n, fill = source)) +
+  geom_histogram(
+    aes(y = ..count..),
+    position = position_dodge(width = 2.), # Ajustar separación entre barras
+    bins = 30,
+    color = "black",
+    alpha = 0.8
+  ) +
+  scale_fill_manual(values = c("Wild type" = "blue", "Mutant" = "red")) +
+  labs(x = "Number of contacts", y = "Frecuency",fill="Structure") +
+  theme_minimal(base_size = 18)
+
+################################### HISTOGRAMA CON LAS DISTANCIAS
+
+# Cargar librerías necesarias
+library(ggplot2)
+library(dplyr)
+
+# Leer los archivos
+data_1PHT <- read.table("1PHT.map", header = FALSE, col.names = c("i", "j", "n"))
+data_2PHT <- read.table("2PHT.map", header = FALSE, col.names = c("i", "j", "n"))
+
+# Añadir etiquetas para diferenciar los datasets
+data_1PHT <- data_1PHT %>%
+  mutate(interval_length = j - i, type = "Wild type")
+
+data_2PHT <- data_2PHT %>%
+  mutate(interval_length = j - i, type = "Mutant")
+
+# Combinar los datasets
+combined_data <- bind_rows(data_1PHT, data_2PHT)
+
+# Crear el histograma
+ggplot(combined_data, aes(x = interval_length, fill = type)) +
+  geom_histogram(
+    aes(y = ..count..),
+    position = position_dodge(width = 1.), # Ajustar separación entre barras
+    bins = 20,
+    color = "black",
+    alpha = 0.8
+  ) +
+  scale_fill_manual(
+    values = c("Wild type" = "blue", "Mutant" = "red"),
+    name = "Tipo"
+  ) +
+  labs(
+    title = "Histograma de distancias j-i entre residuos en contacto",
+    x = "Longitud del intervalo (j-i)",
+    y = "Frecuencia"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "top" # Colocar la leyenda en la parte superior
+  )

@@ -50,7 +50,7 @@ create_heatmap <- function(matrix_data, matrix_index, global_min, global_max) {
       #fill = "Value (log10)",
       title = paste("T=", sprintf("%02d", matrix_index),"K")
     ) +
-    theme_minimal() +
+    theme_minimal(base_size=22) +
     theme(
       axis.text.x = element_text(angle = 90, hjust = 1),
       axis.text.y = element_text(size = 10),
@@ -61,19 +61,19 @@ create_heatmap <- function(matrix_data, matrix_index, global_min, global_max) {
 }
 
 # Parámetros
-file_path <- "fold_profile.txt"
+file_path <- "sigma_profile cont.txt"
 matrix_size <- 83 # Dimensión de las matrices
 
 # Leer las matrices del archivo
 matrices <- read_matrices(file_path, matrix_size)
 
 # Calcular el rango global de los valores de todas las matrices
-global_min <- min(sapply(matrices, function(x) min(x, na.rm = TRUE)))
-global_max <- max(sapply(matrices, function(x) max(x, na.rm = TRUE)))
+global_min <- 1E-16#min(sapply(matrices, function(x) min(x, na.rm = TRUE)))
+global_max <- 1#max(sapply(matrices, function(x) max(x, na.rm = TRUE)))
 
 # Parámetros de temperatura inicial y delta
-T_inicial <- 280  
-delta <- 30    
+T_inicial <- 330  
+delta <- 40    
 
 # Crear heatmaps para todas las matrices con la misma escala de colores
 for (i in seq(length(matrices))) {
@@ -85,7 +85,7 @@ for (i in seq(length(matrices))) {
   
   # Guardar cada heatmap como archivo con nombre basado en la temperatura
   ggsave(
-    filename = sprintf("Heatmaps/1pht_native_%d.jpg", temperatura),
+    filename = sprintf("Heatmaps/ss_sigma_cont_%d.jpg", temperatura),
     plot = heatmap,
     width = 8,
     height = 6

@@ -204,8 +204,8 @@ subroutine dist(d,npar,params)
     write(22,*) ".false."
     write(22,*) ".true." !onlyCp
 
-    write(22,*) ".false." !SS_bridge
-    write(22,*) ".true." !SS_break
+    write(22,*) ".true." !SS_bridge
+    write(22,*) ".false." !SS_break
 
     write(22,*) ".false." !if .false. removes output from WSME_genTden in CMD
     write(22,*) ".false." !if .false. WSME doesn't use a constant deltaT, it reads the experimental temperatures

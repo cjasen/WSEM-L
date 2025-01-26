@@ -151,7 +151,7 @@ contains
     Phi(2)=aonR*(T-T0C)/T+bonR*((T-T0C)**2)/(2.*T) !Enthalpy
     natbase(2)=natbase(2)+ Phi(2)
 
-    Phi(3)=0!aonR+bonR*(T-T0C) !Specific heat
+    Phi(3)=aonR+bonR*(T-T0C) !Specific heat
     natbase(3)=natbase(3)+ Phi(3)
 
     return

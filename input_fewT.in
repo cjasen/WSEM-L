@@ -1,8 +1,8 @@
 83  !n of residues
 1431 !number of electrostatic contacts
 9630.0 !protein mass (g/mol)
--5.539E-002  -2.94E-002   29.0    5.03E-002  -5.83E-004   1.57E-003   5.54E-003   0.1  !contact eps  (KJ/mol),entropy of one residue q (KJ/K/mol), eps_eff, Isolv(M), deltaCp(KJ mol-1 K-1), a(KJ/molK), b(KJ/molK2), gamma (H_ll=-g H_nn)
-300, 420, 5,385 !280,380,0.05,385
+-0.190      -0.12       29.0       5.02E-002  -9.21E-005   1.57E-003   5.53E-003  0.39    !contact eps  (KJ/mol),entropy of one residue q (KJ/K/mol), eps_eff, Isolv(M), deltaCp(KJ mol-1 K-1), a(KJ/molK), b(KJ/molK2), gamma (H_ll=-g H_nn)
+150, 400, 15,385 !280,380,0.05,385
 20 !number of experimental datapoints for specific heat (only used while optimization, if you don't have data, just put any positive number
 0,0,1 !(en nuestro caso, 0,0,1 ; el valor diferente de 1 sirve para salir del bucle) 
 2	! the first number is the number of (S,T) intervals you want to calculate <prod_k=S^T m_k sigma_k>. Then it follows the values of S, and then those for T	
