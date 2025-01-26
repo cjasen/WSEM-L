@@ -4,6 +4,7 @@ program optimization_WSME_loopy
     use defreal
     use opt_aux
     include 'nlopt.f'
+    
     external dist
     real (kind=db)::parv(8)
     double precision d, params3(3), grad3(3),params5(5),grad5(5),minf_opt,eps,ds,dC,a,b,gamma !I don't use grad3 or grad5 for anything
@@ -12,6 +13,7 @@ program optimization_WSME_loopy
     integer*8 opt,l
     REAL time_begin, time_end, tol1
     integer :: flagpar !nexp is the number of experimental points, flagpar a flag to indicate if optimice 3 parameters or 5 (+a and b)
+    logical :: SS_break
 
     read(*,*) nexp
     read(*,*) N_res
@@ -174,7 +176,6 @@ subroutine dist(d,npar,params)
     !Generate input file for WSME_genTden_loopy
     open(22,file="Input/opt_input_WSME.in")
 
-
     write(22,*) N_res
     write(22,*) N_elec
     write(22,*) Mw_opt
@@ -192,7 +193,7 @@ subroutine dist(d,npar,params)
     write(22,*) pdb_code_opt//trim("_expCp.txt")
     write(22,*) "ct"
     write(22,*) ".false."
-    write(22,*) ".true."
+    write(22,*) ".true." ! calculates Cp
     write(22,*) ".false."
     write(22,*) ".false."
     write(22,*) ".false."
@@ -202,12 +203,14 @@ subroutine dist(d,npar,params)
     write(22,*) ".false."
     write(22,*) ".false."
     write(22,*) ".true." !onlyCp
-    write(22,*) ".false."
+
+    write(22,*) ".true." !SS_bridge
+    write(22,*) ".false." !SS_break
+
     write(22,*) ".false." !if .false. removes output from WSME_genTden in CMD
     write(22,*) ".false." !if .false. WSME doesn't use a constant deltaT, it reads the experimental temperatures
     write(22,*) ".false." !if .false. it won't calculate f_L
     write(22,*) ".false." !if .false. it won't calculate <prod 1-sigma>
-
 
     call system('WSME_genTden_loopy.exe < Input/opt_input_WSME.in')
     open(94,file="Output/"//trim(simfile))

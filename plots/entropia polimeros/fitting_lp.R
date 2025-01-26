@@ -70,7 +70,7 @@ ggplot() +
   geom_line(data = df, aes(x = r, y = p), color = "blue", size = 1, linetype = "solid") +
   geom_point(data = zhou_data, aes(x = r, y = p_transformed), color = "red", size = 2) +
   labs(
-       x = "r",
+       x = "r (A)",
        y = "p(r,lp)",
        color = "Datos") +
-  theme_minimal()
+  theme_minimal(base_size = 18)

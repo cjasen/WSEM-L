@@ -44,7 +44,8 @@ program WSME_genTden_loopy
   !  real(kind=db):: nu(1:N,1:N)
 
   integer, allocatable :: SS_matrix(:,:) ! matrix with the disulfide bonds
-  integer :: num_rows, num_cols ! auxiliar variables to build the matrix
+  integer :: num_rows, num_cols, ss_index, ss_a, ss_b! auxiliar variables to build the matrix and exclude states from Z
+  logical :: ss_ok_do_calculation
 
   !we give dimension to matrix
   read (*,*) N
@@ -113,7 +114,7 @@ program WSME_genTden_loopy
   endif
 
   ! Disulfide bridges
-  if(SS_flag)  call get_disulfide_bonds_matrix(pdb_code, SS_matrix, num_rows, num_cols) ! SS_matrix: each row is a bond, the two columns have the two residues which conformates it
+  if(SS_breakable .or. SS_flag)  call get_disulfide_bonds_matrix(pdb_code, SS_matrix, num_rows, num_cols) ! SS_matrix: each row is a bond, the two columns have the two residues which conformates it
   
   allocate(auxe(4,1:N,0:N))
 
@@ -134,7 +135,6 @@ program WSME_genTden_loopy
       Tmin=t_exp_aux(1)
       Tmax=t_exp_aux(size(t_exp_aux))
   endif 
-
 
   cden=cdenmin ! concentration of denaturant. We only use 0
   do while (cden.le.cdenmax)
@@ -173,54 +173,56 @@ program WSME_genTden_loopy
         log_ZETA_abj=0._db
         folded_ab_ij_matrix=0._db
         folded_ab_matrix=0._db
-        do aaux=1,N
-           do baux=aaux,N
-              call calc_thermoab(aaux,baux-aaux+1,auxe,& !calculates the contributions of each (a->b) island of m=1,s=0 in a sea of m=1,s=1
-                   &  logZetaaux,EonRTaux,EonRTsquaredaux,ConR_fixedconfaux,ConRaux,sigmaaux,sigmaiaux,fracfold,sigma_st_ab_aux,& !sigmaaux is <s>_(a,b). sigmai(aux) is <s_i>_ab = sum_(a,b) f^i_(a,b)*Z^(a,b) where f=1 if a in (a,b) and 0 if not
-                   &  sigma_st_ab_all_aux,parv(8),log_ZETA_aux) ! <prod_k=s_t m_k sigma_k> for each (s,t) island (only a->b contribution)
-                   
-!!$           !PIER: To build the pure WSME limit, without loops, comment lines below: from here...
-              logZetaab(aaux,baux)=logZetaaux
-              EonRTab(aaux,baux)=EonRTaux
-              EonRTabsquared(aaux,baux)=EonRTsquaredaux !PIER: added this  27/8/24
-              ConRab_fixedconf(aaux,baux)=ConR_fixedconfaux !PIER: added this  27/8/24
-              sigmaab(aaux,baux)=sigmaaux
-              do k=1,N
-                 sigmaiab(k,aaux,baux)=sigmaiaux(k)
-              enddo
+         do aaux=1,N
+            do baux=aaux,N
 
-              do k=1,ST_length
-                  sigma_st_ab_matrix(k,aaux,baux)=sigma_st_ab_aux(k) ! _aux is an array with ST_interval columns, and a value for one (a,b) interval for each (S,T)
-              end do
-              
-              do s_index=1,N
-               do t_index=s_index,N
-                     sigma_st_ab_all_matrix(s_index,t_index,aaux,baux)=sigma_st_ab_all_aux(s_index,t_index)
-               enddo 
-              enddo
-
-              if(fold_profile) then
-               !save ZETA
-               do k=1,N
-                  log_ZETA_abj(aaux,baux,k)=log_ZETA_aux(k) !imagine log_ZETA_abj as a matrix, each row is an (a,b) island and j-th column is ZETA_j (Z_1^(ab), Z2, Z3... 0 0 0 0...0). There are a-b numbers /= 0, and index numbers are relative to "a" (Z1=Za, Z2=Z_a+1...)
-               enddo
-               do j=aaux,baux
-                  do i=j,aaux,-1 !i goes from j to a (j, j-1, j-2...a)
-                     if (i==j) then
-                        folded_ab_ij_matrix(aaux,baux,i,j)=1-sigmaiab(i,aaux,baux) !remember sigmaiab is <sigma_k>^(a,b)
-                     else
-                        folded_ab_ij_matrix(aaux,baux,i,j)=exp(log_ZETA_abj(aaux,baux,i-aaux+1))*&
-                                 folded_ab_ij_matrix(aaux,baux,i+1,j) ! in log_ZETA_abj(aaux,baux,i-a+1), the "-a+1" is an offset
-                     endif
-                     !if ( folded_ab_ij_matrix(aaux,baux,i,j) < 0 .or.  folded_ab_ij_matrix(aaux,baux,i,j)>1) &
-                     !write(*,*) "F(",aaux,",",baux,",",i,",",j,")=",folded_ab_ij_matrix(aaux,baux,i,j)
+                  call calc_thermoab(aaux,baux-aaux+1,auxe,& !calculates the contributions of each (a->b) island of m=1,s=0 in a sea of m=1,s=1
+                        logZetaaux,EonRTaux,EonRTsquaredaux,ConR_fixedconfaux,ConRaux,sigmaaux,sigmaiaux,fracfold,&
+                        sigma_st_ab_aux,& !sigmaaux is <s>_(a,b). sigmai(aux) is <s_i>_ab = sum_(a,b) f^i_(a,b)*Z^(a,b) where f=1 if a in (a,b) and 0 if not
+                        sigma_st_ab_all_aux,parv(8),log_ZETA_aux,SS_matrix) ! <prod_k=s_t m_k sigma_k> for each (s,t) island (only a->b contribution)
+                        
+      !!$           !PIER: To build the pure WSME limit, without loops, comment lines below: from here...
+                  logZetaab(aaux,baux)=logZetaaux
+                  EonRTab(aaux,baux)=EonRTaux
+                  EonRTabsquared(aaux,baux)=EonRTsquaredaux !PIER: added this  27/8/24
+                  ConRab_fixedconf(aaux,baux)=ConR_fixedconfaux !PIER: added this  27/8/24
+                  sigmaab(aaux,baux)=sigmaaux
+                  do k=1,N
+                     sigmaiab(k,aaux,baux)=sigmaiaux(k)
                   enddo
-               enddo
-              endif
 
-!!$        !...to here.
-           enddo
-        enddo
+                  do k=1,ST_length
+                        sigma_st_ab_matrix(k,aaux,baux)=sigma_st_ab_aux(k) ! _aux is an array with ST_interval columns, and a value for one (a,b) interval for each (S,T)
+                  end do
+                  
+                  do s_index=1,N
+                     do t_index=s_index,N
+                           sigma_st_ab_all_matrix(s_index,t_index,aaux,baux)=sigma_st_ab_all_aux(s_index,t_index)
+                     enddo 
+                  enddo
+
+                  if(fold_profile) then
+                     !save ZETA
+                     do k=1,N
+                        log_ZETA_abj(aaux,baux,k)=log_ZETA_aux(k) !imagine log_ZETA_abj as a matrix, each row is an (a,b) island and j-th column is ZETA_j (Z_1^(ab), Z2, Z3... 0 0 0 0...0). There are a-b numbers /= 0, and index numbers are relative to "a" (Z1=Za, Z2=Z_a+1...)
+                     enddo
+                     do j=aaux,baux
+                        do i=j,aaux,-1 !i goes from j to a (j, j-1, j-2...a)
+                           if (i==j) then
+                              folded_ab_ij_matrix(aaux,baux,i,j)=1-sigmaiab(i,aaux,baux) !remember sigmaiab is <sigma_k>^(a,b)
+                           else
+                              folded_ab_ij_matrix(aaux,baux,i,j)=exp(log_ZETA_abj(aaux,baux,i-aaux+1))*&
+                                       folded_ab_ij_matrix(aaux,baux,i+1,j) ! in log_ZETA_abj(aaux,baux,i-a+1), the "-a+1" is an offset
+                           endif
+                           !if ( folded_ab_ij_matrix(aaux,baux,i,j) < 0 .or.  folded_ab_ij_matrix(aaux,baux,i,j)>1) &
+                           !write(*,*) "F(",aaux,",",baux,",",i,",",j,")=",folded_ab_ij_matrix(aaux,baux,i,j)
+                        enddo
+                     enddo
+                  endif
+   !!$        !...to here.
+            enddo
+         enddo
+
 
          !we have to add the off-set of the all-native case:
          !Hn is betaH^nn
@@ -260,8 +262,7 @@ program WSME_genTden_loopy
         !notice calc_thermoab was in bucle of (a->b) while here the argument is just the number of residues N bc the bucle is within the subroutine
         call calc_thermo2(N, logZetaab, EonRTabtot,EonRTabsquaredtot, ConRab_fixedconftot, sigmaab,sigmaiab,sigma_st_ab_matrix,&
         &      sigma_st_ab_all_matrix, logZeta, EonRT, ConR,ConRfixave, Mavg, sigmaavg,fracfold,Mi,sigmai,Mij,sigmaij,&
-               sigma_st,sigma_st_all,folded_ab_ij_matrix,folded_ab_matrix)
-
+               sigma_st,sigma_st_all,folded_ab_ij_matrix,folded_ab_matrix,SS_matrix)
         !RESULTS:
 
         FreeonRT=-logZeta+Phi(1)
@@ -271,26 +272,7 @@ program WSME_genTden_loopy
         write(20,*) cden,T,(Mavg-Minf)/(M0-Minf),sigmaavg,&
              &       R*T*FreeonRT,R*T*EnthonRT,R*(EnthonRT-FreeonRT),R*ConR,R*Phi(3),R*natbase(3)
 
-        write(94,*)R*ConR ! specific heat
-        if (wFprof.or.wmprof) then
-           F=0.
-           nu=0.
-           call profiles(e,wmprof,F,nu)   ! Profiles is incomplete
-           if(wFprof) then
-              do iM=0,N
-                 write(30,*) cden,T,iM,R*T*F(iM),R*T*(F(iM)+Phi(1))
-              enddo
-           endif
-           if(wmprof) then
-              do i=1,N
-                 do iM=0,N
-                    write(35,*) cden,T,i,iM,nu(i,iM)
-                 enddo
-              enddo
-           endif
-        endif
-
-
+        write(94,*) R*ConR ! specific heat
         if (wstr) then
            call stringhe(m,S,e,N)
            do i=1,N
@@ -504,6 +486,7 @@ subroutine read_init(& !we call this routine at the very start of the main
   read(*,*) wProd_ms
   read(*,*) onlyC
   read(*,*) SS_flag
+  read(*,*) SS_breakable
   read(*,*) show_cmd_output
   read(*,*) constant_deltaT
   read(*,*) f_L
@@ -542,7 +525,7 @@ if (show_cmd_output) then
   write (*,*) "Case for map using: ",MapasContacto
   write(*,*) "wEave,wC,wMave,wfoldfr,wstr,wFprof,wmprof,wMres,wMisland",wEave,wC,wMave,wfoldfr,wstr,wFprof,wmprof,wMres,wMisland
   write(*,*) "onlyC=",onlyC
-  write(*,*) "Use disulfide bridges in the model: ",SS_flag
+  write(*,*) "Use disulfide bridges at Z level: ",SS_flag
   write(*,*) "Calculate f(L) i.e. sumatory of all (s,t) islands: ", f_L
   write(*,*) "Calculate fold profile: ", fold_profile
   write(*,*) '************************************************************************************'
@@ -612,148 +595,6 @@ end subroutine read_init
 
 
 !************************************************
-!************************************************
-!************************************************
-!************************************************
-!************************************************
-
-
-subroutine profiles(&
-     !     I:
-     &     e,withmprofile, &
-                                !     O:
-     &     beF,nu)
-  !     CALCULATE FREE ENERGY PROFILES F(M)/RT and average nu(i,M)=<m_i(M)>
-  use defreal
-  use protdep_par,only:N
-  implicit none
-
-  !  integer:: N
-  logical,intent(in) :: withmprofile
-  real(kind=db),intent(in):: e(3,N,N)
-  real(kind=db),intent(out):: beF(0:N),nu(1:N,1:N)
-
-  integer:: i,j,k,M
-  real(kind=db):: w(1:N,1:N)
-  real(kind=db):: logZ,zeta,A(1:N+1),eta(0:N),alfa(1:N+1,0:N) !alfa(k,M)
-  real(kind=db):: R(1:N,1:N+1,1:N) !nu(i,M), R(i,k,M)
-  w=1.
-  nu=0.
-  zeta=1.
-  A=0.
-  A(1)=1./zeta
-  alfa=0.
-  alfa(1,0)=1.
-  eta=0.
-  R=0.
-  eta(0)=1
-  logZ=0.
-
-  do j=1,N
-     do i=1,j
-        do k=i,j
-           w(i,j)=w(i,j)*exp(e(1,k,j))
-           !              e(1,i,j)=-hij/RT
-        enddo
-     enddo
-  enddo
-
-
-  do j=1,N
-     zeta=1.
-     do k=1,j
-        zeta=zeta+A(k)*w(k,j)
-     enddo
-     logZ=logZ+log(zeta)
-
-     do k=1,j
-        A(k)=A(k)*w(k,j)/zeta
-     enddo
-     A(j+1)=1./zeta
-
-     alfa(1,j)=alfa(1,j-1)*w(1,j)/zeta
-
-     do k=2,j
-        do M=j-1,j-k+1,-1
-           ! NOTICE: M from top down, to avoid using the new values (at j) instead of the old one (at j-1) when adjourning alfa(..,M) from alfa(..,M-1)!
-           alfa(k,M)=alfa(k,M-1)*w(k,j)/zeta
-        enddo
-     enddo
-
-     do M=0,j-1
-        alfa(j+1,M)=eta(M)/zeta
-        eta(M)=alfa(j+1,M)
-     enddo
-
-     do k=2,j
-        do M=j-k+1,j-1
-           eta(M)=eta(M)+alfa(k,M)
-        enddo
-     enddo
-     eta(j)=alfa(1,j)
-
-     if(withmprofile) then
-        if(j.gt.1) then
-           do M=1,j-1
-              do i=1,j-1
-                 R(i,j+1,M)=nu(i,M)/zeta
-              enddo
-           enddo
-        endif
-
-        if(j.gt.2) then
-           do i=1,j-2
-              do k=i+2,j
-                 do M=j-1,j-k+2,-1
-                    ! NOTICE: M from top down, to avoid using the new values (at j) instead of the old one (at j-1) when adjourning R(..,..,M) from R(..,..,M-1)!
-                    R(i,k,M)=R(i,k,M-1)*w(k,j)/zeta
-                 enddo
-              enddo
-           enddo
-        endif
-        ! i=j case:
-        do k=2,j
-           do M=j-k+1,j-1
-              nu(j,M)=nu(j,M)+alfa(k,M)
-           enddo
-        enddo
-        nu(j,j)=alfa(1,j)
-
-        ! j>i case:
-        if(j.gt.1) then
-           do i=1,j-1
-              do M=1,j-1
-                 nu(i,M)=R(i,j+1,M)
-              enddo
-
-              do k=2,i
-                 do M=j-k+1,j-1
-                    nu(i,M)=nu(i,M)+alfa(k,M)
-                 enddo
-              enddo
-              nu(i,j)=alfa(1,j)
-
-              if(j.ge.i+2) then
-                 do k=i+2,j
-                    do M=j-k+2,j-1
-                       nu(i,M)=nu(i,M)+R(i,k,M)
-                    enddo
-                 enddo
-              endif
-           enddo
-        endif
-     endif
-
-  enddo
-
-  do M=0,N
-     beF(M)=-log(eta(M))-logZ
-  enddo
-
-  return
-end subroutine profiles
-
-
 !************************************************
 !************************************************
 !************************************************

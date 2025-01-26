@@ -80,12 +80,13 @@ data_long <- data %>%
 # Graficar
 ggplot(data_long, aes(x = d, y = S_value, color = factor(delta_ji), linetype = S_type)) +
   geom_line(size = 1.2) + 
-  labs(title = "fixed delta_ij", 
+  labs( 
        x = "r/lc", 
-       y = "Entropía (S)", 
-       color = "delta_ij", 
-       linetype = "Tipo de S") +
-  theme_minimal()
+       y = "S(r,lc)", 
+       color = "n", 
+       linetype = "Method") +
+  scale_y_log10()+
+  theme_minimal(base_size = 18)
 
 
 ################# FIXED DISTANCE
@@ -104,12 +105,13 @@ data_long2 <- data2 %>%
 
 ggplot(data_long2, aes(x = delta_ji, y = S_value, color = factor(d), linetype = S_type)) +
   geom_line(size = 1.2) + 
-  labs(title = "fixed d (r_ij)", 
-       x = "delta_ij", 
-       y = "S", 
-       color = "d/lc", 
-       linetype = "S") +
-  theme_minimal()
+  labs(
+       x = "n", 
+       y = "S(r,lc)", 
+       color = "r/lc", 
+       linetype = "Method") +
+  scale_y_log10()+
+  theme_minimal(base_size = 18)
 
 
 ######################################
@@ -117,7 +119,7 @@ ggplot(data_long2, aes(x = delta_ji, y = S_value, color = factor(d), linetype = 
 # Convertir los datos a formato largo y filtrar para uno
 data_long <- data %>%
   gather(key = "S_type", value = "S_value", Ooka, Zhou, Becker) %>%
-  filter(S_type == "Becker")  # Filtrar solo los datos "Ooka"
+  filter(S_type == "Ooka")  # Filtrar solo los datos "Ooka"
 
 ggplot(data_long, aes(x = d, y = S_value, color = factor(delta_ji))) +
   geom_line(size = 1.2) + 
@@ -125,13 +127,13 @@ ggplot(data_long, aes(x = d, y = S_value, color = factor(delta_ji))) +
        x = "r/lc", 
        y = "S(r,lc)", 
        color = "n") +
-  theme_minimal()
+  theme_minimal(base_size = 22)
 
 
 # Convertir los datos a formato largo y filtrar para uno
 data_long2 <- data2 %>%
   gather(key = "S_type", value = "S_value", Ooka, Zhou, Becker) %>%
-  filter(S_type == "Becker")  # Filtrar solo los datos "Ooka"
+  filter(S_type == "Ooka")  # Filtrar solo los datos "Ooka"
 
 
 ggplot(data_long2, aes(x = delta_ji, y = S_value, color = factor(d))) +
@@ -140,7 +142,7 @@ ggplot(data_long2, aes(x = delta_ji, y = S_value, color = factor(d))) +
        x = "n", 
        y = "S(r,lc)", 
        color = "r/lc") +
-  theme_minimal()
+  theme_minimal(base_size = 22)
 
 
 

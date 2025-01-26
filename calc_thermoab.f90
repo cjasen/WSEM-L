@@ -15,7 +15,7 @@ module thermoab
            & a_start,leng,econtrib,& ! econtrib is auxe which is also e, the matrix with the ~h_ij calculated in calc_e_Phi
                                 ! O:
            & logZeta,EonRT,EonRTsquared,ConR_fixedconf,ConR,sigma,sigmai,fracfold,&
-           sigma_st_ab,sigma_st_ab_all,gamma,log_ZETA)
+           sigma_st_ab,sigma_st_ab_all,gamma,log_ZETA, SS_matrix)
         !     use defreal
         !     use phys_const
         !     use globalpar , only : wfoldfr
@@ -30,6 +30,7 @@ module thermoab
         real(kind=db),intent(out):: EonRTsquared,ConR_fixedconf    !PIER: added this, also in the argument 27/08/24
         real(kind=db):: nu(1:leng,1:leng),F(0:leng),gamma
         real(kind=db):: log_ZETA(N) !log of Z_{a,j}^{a,b}/Z_{a,j-1}^{a,b} . No relation with logZeta. We only use the first "leng" slots of the array
+        integer :: SS_matrix(:,:)
 
         logical,parameter :: withmprof=.false.
 
@@ -42,12 +43,8 @@ module thermoab
         nu=0._db
         log_ZETA=0._db
         call datiab(log_ZETA,logZeta,EonRT,EonRTsquared,ConR_fixedconf,ConR,sigma,sigmai,sigma_st_ab,sigma_st_ab_all,&
-        & econtrib,a_start,leng,gamma) !dati is the plural for data, as this calculates thermo data. Terrible name.
+        & econtrib,a_start,leng,gamma, SS_matrix) !dati is the plural for data, as this calculates thermo data. Terrible name.
 
-        if(wfoldfr) then
-           call profiles(econtrib,withmprof,F,nu)
-           call calc_fracfold(F,fracfold)
-        endif
         return
       end subroutine calc_thermoab
 
@@ -61,7 +58,7 @@ module thermoab
                                 !     O:
          & log_ZETA,logZeta,EonRT,EonRTsquared,ConR_fixedconf,ConR,sigma,sigmai,sigma_st_ab,sigma_st_ab_all, &
                                 !     I:
-         &  econtrib,a_start,leng,gamma)
+         &  econtrib,a_start,leng,gamma, SS_matrix)
       !   use defreal
       !   use protdep_par, only: N
       !   use globalpar
@@ -72,11 +69,12 @@ module thermoab
       real(kind=db),intent(out):: logZeta,EonRT, ConR, sigma, sigmai(1:N)
       real(kind=db) :: sigma_st_ab(1:ST_length), sigma_st_ab_all(1:N,1:N),gamma 
       real(kind=db),intent(out):: EonRTsquared,ConR_fixedconf    !PIER: added this, also in the argument 27/08/24
-      integer :: i,j,k,offset,s,t,p
+      integer :: i,j,k,offset,s,t,p,i_start
       real(kind=db):: H(leng,leng),O(leng,leng),A(leng+1),B(leng+1),C(leng+1),D(leng+1),E(leng+1),Z,X,Y,zaux
       real(kind=db):: Zeta,O2(leng,leng),B2(leng+1),X2
       real(kind=db):: aux,aux1,auxmin,auxmax,aux1min,aux1max,auxHmin,auxHmax !FOR CHECKS
       real(kind=db):: log_ZETA(N)
+      integer :: SS_matrix(:,:)
 
 
       offset=a_start-1 !to know in which part of the whole residue chain our island starts
@@ -110,6 +108,7 @@ module thermoab
             aux1=aux1+ econtrib(4,j+offset,j-1+offset)
 
             H(i,j)=exp(-H(i,j))
+            if(SS_flag .and. j==SS_matrix(1,2)-offset) H(i,j)=0.0_db !Restriction of disulfide bridges
          enddo
       enddo
 
@@ -164,16 +163,20 @@ module thermoab
       Zeta=1.0
       logZeta=0.0_db
       log_ZETA=0._db
-      do j=1,leng
 
+
+      do j=1,leng
+         i_start=1
+         if(SS_flag .and. (SS_matrix(1,2)<j+offset)) i_start=max(SS_matrix(1,2)-offset+1,1) !if there's a Cysteine with SS-bridge between a and j, then start the calculation after the Cysteine, which breaks the loopy chain
          Z=1.0_db
-         do i=1,j
-            Z=Z+H(i,j)*A(i) ! Pablo's nomenclature: xi_j = 1 + sum_i A_i^(j-1)*w_ij, here Z=xi and H(i,j)=w_ij
+         do i=i_start,j
+            Z=Z+H(i,j)*A(i) ! Notes' nomenclature: xi_j = 1 + sum_i A_i^(j-1)*w_ij, here Z=xi and H(i,j)=w_ij
          enddo
+
          logZeta=logZeta+log(Z)
          Z=1.0_db/Z
          log_ZETA(j)=log(Z) !save Z. We only use this if we want to calculate <prod_k=i^j (1-sigma_k)><prod_k m_k>
-         do i=1,j
+         do i=1,j !notice here we start on i=1, not i=i_start
             A(i)=Z*H(i,j)*A(i) ! A_i^j = A_i^(j-1)*w_ij/xi_j for i<=j
          enddo
          A(j+1)=Z ! for A_(j+1)^j = 1/xi_j (now, Z=1/xi_j)
@@ -186,7 +189,7 @@ module thermoab
             B(j+1)=Z*X
 
             X=0.0_db
-            do i=1,j+1
+            do i=i_start,j+1
                X=X+B(i)
             enddo
          endif
@@ -200,7 +203,7 @@ module thermoab
             B2(j+1)=Z*X2
 
             X2=0.0_db
-            do i=1,j+1
+            do i=i_start,j+1
                X2=X2+B2(i)
             enddo
             !     endadded by pier
@@ -212,7 +215,7 @@ module thermoab
             C(j+1)=Z*Y
 
             Y=0.0_db
-           do i=1,j+1
+           do i=i_start,j+1
                Y=Y+C(i)
             enddo
          endif
@@ -225,7 +228,7 @@ module thermoab
             D(j+1)=Z*sigma
 
             sigma=0.0_db
-            do i=1,j+1
+            do i=i_start,j+1
                sigma=sigma+D(i)
             enddo
          endif
@@ -242,8 +245,11 @@ module thermoab
 
             ! This section is quite inefficient because we do the same calculations in the previous and in the next section.
             do j=1,leng
+               i_start=1
+               if(SS_flag .and. (SS_matrix(1,2)<j+offset)) i_start=max(SS_matrix(1,2)-offset+1,1) 
+
                Zaux=1.0_db
-               do i=1,j
+               do i=i_start,j
                   Zaux=Zaux+H(i,j)*A(i)
                enddo
                Zaux=1.0_db/Zaux
@@ -262,7 +268,7 @@ module thermoab
                E(j+1)=Zaux*sigma_st_ab(p)
 
                sigma_st_ab(p)=0.0_db
-               do i=1,j+1
+               do i=i_start,j+1
                   sigma_st_ab(p)=sigma_st_ab(p)+E(i)
                enddo
             
@@ -281,8 +287,11 @@ module thermoab
                A(1)=1.0_db
    
                do j=1,leng
+                  i_start=1
+                  if(SS_flag .and. (SS_matrix(1,2)<j+offset)) i_start=max(SS_matrix(1,2)-offset+1,1) 
+
                   Zaux=1.0_db
-                  do i=1,j
+                  do i=i_start,j
                      Zaux=Zaux+H(i,j)*A(i)
                   enddo
                   Zaux=1.0_db/Zaux
@@ -301,7 +310,7 @@ module thermoab
                   E(j+1)=Zaux*sigma_st_ab_all(s,t)
    
                   sigma_st_ab_all(s,t)=0.0_db
-                  do i=1,j+1
+                  do i=i_start,j+1
                      sigma_st_ab_all(s,t)=sigma_st_ab_all(s,t)+E(i)
                   enddo
                end do ! j
@@ -318,13 +327,13 @@ module thermoab
             A=0.0_db
             A(1)=1.0_db
             do j=1,leng
+               i_start=1
+               if(SS_flag .and. (SS_matrix(1,2)<j+offset)) i_start=max(SS_matrix(1,2)-offset+1,1) 
 
                Zaux=1.0_db
-               do i=1,j
+               do i=i_start,j
                   Zaux=Zaux+H(i,j)*A(i)
-                  !write(*,*) i,j,Z
                enddo
-
                Zaux=1.0_db/Zaux
 
                do i=1,j
@@ -343,7 +352,7 @@ module thermoab
                D(j+1)=Zaux*sigmai(k)
 
                sigmai(k)=0.0_db 
-               do i=1,j+1
+               do i=i_start,j+1
                   sigmai(k)=sigmai(k)+D(i) 
                enddo
 

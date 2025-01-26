@@ -4,8 +4,8 @@ set output 'sim_vs_exp.png'
 
 
 # Gráfico 1: m v. T y sigma v. T
-set xlabel 'T'
-set ylabel 'Cp'
+set xlabel 'T (K)'
+set ylabel 'Cp (KJ/(molK)'
 set grid
 set key outside
-plot 'profthermo.dat' using 2:8 with lines title 'Sim' linecolor rgb 'red' lw 2, "1PHT_expCp.txt" lc rgb "blue" title "Exp"
+plot 'profthermo.dat' using 2:8 with lines title 'Sim' linecolor rgb 'red' lw 2, "2PHT_expCp.txt" lc rgb "blue" title "Exp"

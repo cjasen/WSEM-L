@@ -22,10 +22,10 @@ graficar_todas_las_temperaturas <- function(datos) {
     geom_line(size = 1.2) +      # Ajusta el grosor de las líneas
     scale_x_log10() +            # Escala logarítmica en el eje x
     labs(x = "L", y = "f(L)", color = "T (K)") +
-    theme_minimal()
+    theme_minimal(base_size = 18)
 }
 
 # Ejemplo de uso
-ruta_archivo <- "f_L fold.txt"
+ruta_archivo <- "f_L.txt"
 datos <- leer_datos(ruta_archivo)
 graficar_todas_las_temperaturas(datos)
